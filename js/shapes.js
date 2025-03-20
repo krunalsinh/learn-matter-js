@@ -18,12 +18,17 @@ var Engine = Matter.Engine,
     Constraint = Matter.Constraint,
     MouseConstraint = Matter.MouseConstraint,
     Common = Matter.Common,
-    Mouse = Matter.Mouse;
-    Vector = Matter.Vector;
+    Mouse = Matter.Mouse,
+    Vector = Matter.Vector,
+    Vertices = Matter.Vertices,
+    Svg = Matter.Svg;
+
+var arrow = Vertices.fromPath('40 0 40 20 100 20 100 80 40 80 40 100 0 50'),
+    chevron = Vertices.fromPath('100 0 75 50 100 100 25 100 0 50 25 0'),
+    star = Vertices.fromPath('50 0 63 38 100 38 69 59 82 100 50 75 18 100 31 59 0 38 37 38'),
+    horseShoe = Vertices.fromPath('35 7 19 17 14 38 14 58 25 79 45 85 65 84 65 66 46 67 34 59 30 44 33 29 45 23 66 23 66 7 53 7');
 
 // provide concave decomposition support library
-console.log(decomp);
-
 Common.setDecomp(decomp);
 
 
@@ -67,7 +72,7 @@ Composite.add(world, [
 ]);
 
 /* 1) rectangle -----------------------------*/
-const rect1 = Bodies.rectangle(450, 0, 50, 50, {
+const rect1 = Bodies.rectangle(450, 0, 80, 80, {
     label: "box1",
     isStatic: false,
     angle: Math.PI / 4,
@@ -86,7 +91,7 @@ const rect1 = Bodies.rectangle(450, 0, 50, 50, {
 Composite.add(world, rect1);
 
 /* 2) circle -----------------------------*/
-const circle1 = Matter.Bodies.circle(60, 0, 30, {
+const circle1 = Matter.Bodies.circle(60, 0, 60, {
     isStatic: false,
     angle: Math.PI / 4,
     density: 1,
@@ -137,6 +142,79 @@ const polygon2 = Bodies.polygon(200, 0, 5, 50, {
     },
 });
 Composite.add(world, polygon2);
+
+
+/* 5) Custom shapes from Vertices-----------------------------*/
+let arrowShape = Bodies.fromVertices(300, 50, arrow, {
+    render: {
+        fillStyle: "#9b59b6",
+        strokeStyle: "#9b59b6",
+        lineWidth: 1
+    }
+}, true);
+
+let chevronShape = Bodies.fromVertices(400, 50, chevron, {
+    render: {
+        fillStyle: "#c0392b",
+        strokeStyle: "#c0392b",
+        lineWidth: 1
+    }
+}, true);
+
+let starShape = Bodies.fromVertices(500, 50, star, {
+    render: {
+        fillStyle: "#16a085",
+        strokeStyle: "#16a085",
+        lineWidth: 1
+    }
+}, true);
+
+let horseShoeShape = Bodies.fromVertices(300, 100, horseShoe, {
+    render: {
+        fillStyle: "#e84393",
+        strokeStyle: "#e84393",
+        lineWidth: 1
+    }
+}, true);
+Composite.add(world, [arrowShape, chevronShape, starShape, horseShoeShape]);
+
+/* 6) Custom shapes using external SVG Images-----------------------------*/
+var select = function(root, selector) {
+    return Array.prototype.slice.call(root.querySelectorAll(selector));
+};
+
+var loadSvg = function(url) {
+    return fetch(url)
+        .then(function(response) { 
+            return response.text(); 
+        })
+        .then(function(raw) { 
+            return (new window.DOMParser()).parseFromString(raw, 'image/svg+xml'); 
+        });
+};
+
+([
+    './images/svg/hand-right.svg', 
+    './images/svg/mark.svg',
+    './images/svg/puzzle.svg',
+    './images/svg/u-pin.svg'
+]).forEach(function(path, i) { 
+    loadSvg(path).then(function(root) {
+        var color = Common.choose(['#f19648', '#f5d259', '#f55a3c', '#063e7b', '#ececd1']);
+
+        var vertexSets = select(root, 'path')
+            .map(function(path) { return Vertices.scale(Svg.pathToVertices(path, 30), 0.3, 0.3); });
+
+        Composite.add(world, Bodies.fromVertices(100 + i * 150, 200 + i * 50, vertexSets, {
+            render: {
+                fillStyle: color,
+                strokeStyle: color, 
+                lineWidth: 1
+            }
+        }, true));
+    });
+});
+
 
 // run the renderer
 Render.run(render);
