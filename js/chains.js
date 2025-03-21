@@ -58,7 +58,7 @@ var render = Render.create({
 });
 
 
-/* -------------- rope 1 -------------- */
+/* -------------- rope 1 (using circle)-------------- */
 //add bodies
 const groupA = Body.nextGroup(true);
 
@@ -68,22 +68,20 @@ const ropeA = Composites.stack(100, 0, 1, 8, 10, 10, function (x, y) {
 
 const ropeAConstraint = Constraint.create({
     pointA: {x: ropeA.bodies[0].position.x, y: ropeA.bodies[0].position.y},
-    pointB: {x: -25, y : 0},
+    pointB: {x: 0, y : 0},
     bodyB: ropeA.bodies[0],
     stiffness: 0.1
 })
 
 Composites.chain(ropeA, 0.5, 0,-0.5, 0, {
     stiffness: 0.1,
-    length: 10,
-    render: {
-        type: "line"
-    }
+    length: -0.5,
+    
 })
 
 Composite.add(world,[ropeA, ropeAConstraint]);
 
-/* -------------- rope 2 -------------- */
+/* -------------- rope 2 (using images)-------------- */
 
 var select = function(root, selector) {
     return Array.prototype.slice.call(root.querySelectorAll(selector));
@@ -109,30 +107,53 @@ var loadSvg = function(url) {
 
             const groupB = Body.nextGroup(true);
 
-            const ropeB = Composites.stack(500, 0, 1, 1, 2, 50, function (x, y) {
+            const ropeB = Composites.stack(500, 50, 1, 3, 0, 0, function (x, y) {
                 return Bodies.fromVertices(x, y, vertexSets, {
+                    isStatic: false,
                     render: {
                         fillStyle: color,
                         strokeStyle: color, 
                         lineWidth: 1
                     },
-                    collisionFilter: { group: groupB }
+                    collisionFilter: { group: groupB },
                 }, true);
             })
 
             const ropeBConstraint = Constraint.create({
-                pointA: {x: ropeB.bodies[0].position.x, y: ropeB.bodies[0].position.y},
-                pointB: {x: -100, y : 0},
+                pointA: {x: ropeB.bodies[0].position.x, y: ropeB.bodies[0].position.y - 100},
+                pointB: {x: 0, y : -50},
                 bodyB: ropeB.bodies[0],
                 stiffness: 0.1
             })
 
-            Composites.chain(ropeB, 2, 0, 2, 0, { stiffness: 0.8, length: 2, render: { type: 'line' } });
+            Composites.chain(ropeB, 0, 0, 0, 0, { stiffness: 0.1, length: 150, render: { type: 'line' } });
             
             Composite.add(world,[ropeB, ropeBConstraint]);
     });
 });
 
+
+/* -------------- rope 3 (using rectangles)-------------- */
+//add bodies
+const groupC = Body.nextGroup(true);
+
+const ropeC = Composites.stack(900, 0, 13, 1, 10, 10, function (x, y) {
+    return Bodies.rectangle(x - 20, y, 50, 20, { collisionFilter: { group: groupC }, chamfer: 5 });
+})
+
+const ropeCConstraint = Constraint.create({
+    pointA: {x: ropeC.bodies[0].position.x, y: ropeC.bodies[0].position.y},
+    pointB: {x: -20, y : 0},
+    bodyB: ropeC.bodies[0],
+    stiffness: 0.5
+})
+
+Composites.chain(ropeC, 0.3, 0,-0.3, 0, {
+    stiffness: 1,
+    length: 0
+})
+
+Composite.add(world,[ropeC, ropeCConstraint]);
 
 // run the renderer
 Render.run(render);
