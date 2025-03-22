@@ -22,11 +22,6 @@ var Engine = Matter.Engine,
     Svg = Matter.Svg,
     Events = Matter.Events;
 
-    var arrow = Vertices.fromPath('40 0 40 20 100 20 100 80 40 80 40 100 0 50'),
-    chevron = Vertices.fromPath('100 0 75 50 100 100 25 100 0 50 25 0'),
-    star = Vertices.fromPath('50 0 63 38 100 38 69 59 82 100 50 75 18 100 31 59 0 38 37 38'),
-    horseShoe = Vertices.fromPath('35 7 19 17 14 38 14 58 25 79 45 85 65 84 65 66 46 67 34 59 30 44 33 29 45 23 66 23 66 7 53 7');
-
 
 // provide concave decomposition support library
 Common.setDecomp(decomp);
@@ -63,29 +58,66 @@ var render = Render.create({
 });
 
 const group = Body.nextGroup(true);
-const circleA = Bodies.circle(500, 200, 25,{ friction: 0, isStatic: false, render : { fillStyle: "#666" } });
-const circleB = Bodies.circle(550, 250, 25,{ friction: 0, isStatic: false, render : { fillStyle: "#666" } });
-const circleC = Bodies.circle(450, 250, 25,{ friction: 0, isStatic: false, render : { fillStyle: "#666" } });
+const circleA = Bodies.circle(500, 180, 25,{ friction: 0, isStatic: false, render : { fillStyle: "#666" } });
+const circleB = Bodies.circle(550, 250, 25,{ friction: 0, isStatic: false, render: circleA.render });
+const circleC = Bodies.circle(450, 250, 25,{ friction: 0, isStatic: false, render: circleA.render });
 
-const rectA = Bodies.rectangle(500, 200, 10, 90, { isStatic: true, angle: Math.PI / 4, render : { fillStyle: "#666"} })
-const rectB = Bodies.rectangle(500, 200, 10, 90, { isStatic: true, angle: -Math.PI / 4, render : { fillStyle: "#666"} })
-const rectC = Bodies.rectangle(500, 250, 10, 100, { isStatic: true, angle: Math.PI / 2, render : { fillStyle: "#666"} })
+const rectA = Bodies.rectangle(485, 200, 10, 90, { isStatic: false, angle: Math.PI / 5, render: circleA.render })
+const rectB = Bodies.rectangle(515, 200, 10, 90, { isStatic: false, angle: -Math.PI / 5, render: circleA.render })
+const rectC = Bodies.rectangle(500, 250, 10, 100, { isStatic: false, angle: Math.PI / 2, render: circleA.render })
 
 
 const compoundBody1 = Body.create({
-    isStatic: true,
+    isStatic: false,
+    density: 1,
+    friction: 0,
+    restitution: 0.8,
     parts : [circleA, circleB, circleC, rectA, rectB, rectC]
 })
 
 
-Composite.add(world, [compoundBody1]);
+const circleGrp1 = Bodies.circle(400, 150, 25,{ friction: 0, isStatic: false, render : { fillStyle: "#666" } });
+
+
+const constraint1 = Constraint.create({
+    bodyA: circleGrp1,
+    pointA: { x: 0, y: 0 },
+    bodyB: compoundBody1,
+    pointB: { x: 0, y: 0 }
+});
+
+Composite.add(world, [circleGrp1, compoundBody1, constraint1]);
+
+
+const circleD = Bodies.circle(800, 160, 20,{ friction: 0, isStatic: false, render : { fillStyle: "#666" } });
+const circleD1 = Bodies.circle(800, 300, 20,{ friction: 0, isStatic: false, render : { fillStyle: "#666" } });
+const circleE = Bodies.circle(800, 230, 35,{ friction: 0, isStatic: false, render: circleD.render });
+const compoundBody2 = Body.create({
+    isStatic: false,
+    density: 1,
+    friction: 0,
+    restitution: 0.8,
+    parts : [circleD,circleD1, circleE]
+})
+
+const constraint2 = Constraint.create({
+    pointA: { x: 800, y: 10 },
+    bodyB: compoundBody2,
+    pointB: { x: 0, y: 0 }
+});
+
+Composite.add(world, [compoundBody2, constraint2]);
+
 
 Composite.add(world, [
     // walls
-    Bodies.rectangle(400, 0, 800, 50, { isStatic: true }),
-    Bodies.rectangle(400, 600, 800, 50, { isStatic: true }),
-    Bodies.rectangle(800, 300, 50, 600, { isStatic: true }),
-    Bodies.rectangle(0, 300, 50, 600, { isStatic: true })
+    Bodies.rectangle(960, 0, innerWidth, 50, { isStatic: true }),
+    Bodies.rectangle(960,  innerHeight , innerWidth, 50, { isStatic: true }),
+    Bodies.rectangle(0, 450, 50, innerHeight, { isStatic: true }),
+    Bodies.rectangle(960 + 960, 450, 50, innerHeight, { isStatic: true }),
+    //ramp
+    Bodies.rectangle(400, 300, 500, 5, { isStatic: true, angle: Math.PI / 8 })
+  
 ]);
 
 // run the renderer
