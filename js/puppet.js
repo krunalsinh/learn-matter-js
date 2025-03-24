@@ -143,7 +143,7 @@ const puppetCount = 4;
 const puppetArr = [];
 
 for(let i = 0; i < puppetCount; i++) {
-    puppetArr.push(createPuppet({ x: i * 150 + 500, y: i * 150 + 80, bodyGrp: collisionGrp1, color: "pink", isStatic: false }));
+    puppetArr.push(createPuppet({ x: i * 150 + 500, y: i * 150 + 80, bodyGrp: collisionGrp1, color: `hsl(${Math.random() * 360},50%, 50%)`, isStatic: false }));
 }
 
 puppetArr.forEach((puppet,index) => {   
