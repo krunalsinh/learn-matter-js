@@ -55,81 +55,92 @@ var render = Render.create({
     },
 });
 
-function createPuppet(x = 100, y = 100, bodyGrp = Body.nextGroup(true)) {
+function createPuppet({x = 100, y = 100, bodyGrp = Body.nextGroup(true), color = "#666", isStatic = false }) {
+    console.log(bodyGrp);
+    
     const charBody = Composite.create({ label: 'charBody' });
     //face 
-    const faceBg = Bodies.circle(x, y, 50, {
-        isStatic: false,
-        render: { fillStyle: "#666" }
-    });
+    const faceBg = Bodies.circle(x, y, 50, { render: { fillStyle: "#666" } });
     const eyeL = Bodies.circle(x - 17, y - 10, 15, { render: { fillStyle: "#fff" } });
     const eyeR = Bodies.circle(x + 20, y - 10, 10, { render: { fillStyle: "#fff" } });
     const face = Body.create({
         label: "face",
-        isStatic: false,
+        isStatic: isStatic,
         density: 1,
         collisionFilter: { group: bodyGrp },
         parts: [faceBg, eyeL, eyeR]
     })
     //hands
-    const handR = Bodies.rectangle(x + 60, y - 38, 70, 10, {
+
+    const handRElbow = Bodies.rectangle(x + 57, y - 35, 70, 10, { label: "handRElbow", render: { fillStyle: color }, chamfer: { radius: 5 },  });
+    const handRPam = Bodies.circle(x + 77, y - 35, 15, {label: "handRPam",density: 0.00001, render: { fillStyle: "#fff" },  });
+    const handR = Body.create({
         label: "handR",
         friction: 0,
         density: 0.0002,
-        isStatic: false,
+        isStatic: isStatic,
+        angle: Math.PI / 2,
         collisionFilter: { group: bodyGrp },
-        render: { fillStyle: "#ff00ff" }
-    });
-
+        parts: [handRElbow, handRPam]
+    })
+    
     const constraintHandR = Constraint.create({
         bodyA: handR,
-        pointA: { x: -25, y: 0 },
+        pointA: { x: -38, y: 0 },
         bodyB: face,
-        pointB: { x: 35, y: -35 },
+        pointB: { x: 31, y: -34 },
     });
 
-    const handL = Bodies.rectangle(x - 56, y - 38, 70, 10, {
+
+    const handLElbow = Bodies.rectangle(x - 52, y - 36, 70, 10, { label: "handLElbow", render: { fillStyle: color }, chamfer: { radius: 5 } });
+    const handLPam = Bodies.circle(x - 76, y - 36, 15, {label: "handLPam", density: 0.00001, render: { fillStyle: "#fff" } });
+    const handL = Body.create({
         label: "handL",
         friction: 0,
         density: 0.0002,
-        isStatic: false,
+        isStatic: isStatic,
         collisionFilter: { group: bodyGrp },
-        render: { fillStyle: "#ff00ff" }
-    });
+        parts: [handLElbow, handLPam]
+    })
     const constraintHandL = Constraint.create({
         bodyA: handL,
-        pointA: { x: 32, y: 0 },
+        pointA: { x: 40, y: 0 },
         bodyB: face,
         pointB: { x: -25, y: -35 }
     });
 
     //legs
-    const LegR = Bodies.rectangle(x + 60, y + 35, 70, 10, {
+    const LegRThai = Bodies.rectangle(x + 60, y + 34, 70, 10, { label: "LegRThai", render: { fillStyle: color }, chamfer: { radius: 5 } });
+    const LegRPam = Bodies.circle(x + 80, y + 34, 15, {label: "LegRPam", density: 0.00001, render: { fillStyle: "#fff" } });
+
+    const LegR = Body.create({
         label: "legR",
         friction: 0,
         density: 0.0002,
-        isStatic: false,
+        isStatic: isStatic,
         collisionFilter: { group: bodyGrp },
-        render: { fillStyle: "#ff00ff" }
-    });
+        parts: [LegRThai, LegRPam]
+    })
     const constraintLegR = Constraint.create({
         bodyA: LegR,
         pointA: { x: -35, y: 0 },
         bodyB: face,
-        pointB: { x: 25, y: 35 }
+        pointB: { x: 35, y: 35 }
     });
 
-    const LegL = Bodies.rectangle(x - 56, y + 35, 70, 10, {
-        label: "legL",
+    const LegLThai = Bodies.rectangle(x - 56, y + 34, 70, 10, { label: "LegLThai", render: { fillStyle: color }, chamfer: { radius: 5 } });
+    const LegLPam = Bodies.circle(x - 80, y + 34, 15, {label: "LegLPam", density: 0.00001, render: { fillStyle: "#fff" } });
+    const LegL = Body.create({
+        label: "LegL",
         friction: 0,
         density: 0.0002,
-        isStatic: false,
+        isStatic: isStatic,
         collisionFilter: { group: bodyGrp },
-        render: { fillStyle: "#ff00ff" }
-    });
+        parts: [LegLThai, LegLPam]
+    })
     const constraintLegL = Constraint.create({
         bodyA: LegL,
-        pointA: { x: 32, y: 0 },
+        pointA: { x: 42, y: 0 },
         bodyB: face,
         pointB: { x: -25, y: 35 }
     });
@@ -147,30 +158,31 @@ function createPuppet(x = 100, y = 100, bodyGrp = Body.nextGroup(true)) {
     return charBody;
 }
 const collisionGrp1 = Body.nextGroup(true);
-const puppetA = createPuppet(200, 100, collisionGrp1);
-const pointALH = puppetA.bodies.find(body => body.label === "handL");
-const pointARL = puppetA.bodies.find(body => body.label === "legR");
-const puppetB = createPuppet(300, 300, collisionGrp1);
-const pointBLH = puppetB.bodies.find(body => body.label === "handL");
+const puppetA = createPuppet({x: 200, y : 100, bodyGrp: collisionGrp1, color : "pink", isStatic : true});
+// const pointALH = puppetA.bodies.find(body => body.label === "handL");
+// const pointARL = puppetA.bodies.find(body => body.label === "legR");
+const puppetB = createPuppet({x : 300, y : 300, bodyGrp: collisionGrp1, color: "white", isStatic : true});
+// const pointBLH = puppetB.bodies.find(body => body.label === "handL");
 
 
-const mainPoint = Constraint.create({
-    bodyA: pointALH,
-    pointB: Vector.clone(pointALH.position),
-    stiffness: 1,
-    length: 0
-})
-
-const connectPoint = Constraint.create({
-    bodyA: pointBLH,
-    bodyB: pointARL,
-    stiffness: 1,
-    length: 0
-})
+// const mainPoint = Constraint.create({
+//     bodyA: pointALH,
+//     pointB: Vector.clone(pointALH.position),
+//     stiffness: 1,
+//     length: 0
+// })
 
 
-console.log(puppetA);
-Composite.add(world, [puppetA, puppetB, mainPoint, connectPoint]);
+// const connectPoint = Constraint.create({
+//     bodyA: pointARL,
+//     pointA: {x : 50, y : 0},
+//     bodyB: pointBLH,
+//     stiffness: 1,
+//     length: 0
+// })
+
+
+Composite.add(world, [puppetA]);
 
 Composite.add(world, [
     // walls
