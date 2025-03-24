@@ -25,13 +25,13 @@ Common.setDecomp(decomp);
 
 
 // create an engine
-var engine = Engine.create();
+const engine = Engine.create();
 
 //world
-var world = engine.world;
+const world = engine.world;
 
 // create a renderer
-var render = Render.create({
+const render = Render.create({
     element: document.body,
     canvas: canvas,
     engine: engine,
@@ -55,9 +55,25 @@ var render = Render.create({
     },
 });
 
-function createPuppet({x = 100, y = 100, bodyGrp = Body.nextGroup(true), color = "#666", isStatic = false }) {
+function createHandLeg({ x1, y1, x2, y2, labelPrefix, color, bodyGrp, isStatic }) {
+    const handLegRElbow = Bodies.rectangle(x1, y1, 70, 10, { label: `${labelPrefix}Elbow`, render: { fillStyle: color }, chamfer: { radius: 5 }, });
+    const handLegRPam = Bodies.circle(x2, y2, 15, { label: `${labelPrefix}Pam`, density: 0.00001, render: { fillStyle: color }, });
+    const handLegR = Body.create({
+        label: labelPrefix,
+        friction: 0,
+        density: 0.0002,
+        isStatic: isStatic,
+        angle: Math.PI / 2,
+        collisionFilter: { group: bodyGrp },
+        parts: [handLegRElbow, handLegRPam]
+    })
+
+    return handLegR;
+}
+
+function createPuppet({ x = 100, y = 100, bodyGrp = Body.nextGroup(true), color = "#666", isStatic = false }) {
     console.log(bodyGrp);
-    
+
     const charBody = Composite.create({ label: 'charBody' });
     //face 
     const faceBg = Bodies.circle(x, y, 50, { render: { fillStyle: "#666" } });
@@ -72,84 +88,48 @@ function createPuppet({x = 100, y = 100, bodyGrp = Body.nextGroup(true), color =
     })
     //hands
 
-    const handRElbow = Bodies.rectangle(x + 57, y - 35, 70, 10, { label: "handRElbow", render: { fillStyle: color }, chamfer: { radius: 5 },  });
-    const handRPam = Bodies.circle(x + 77, y - 35, 15, {label: "handRPam",density: 0.00001, render: { fillStyle: "#fff" },  });
-    const handR = Body.create({
-        label: "handR",
-        friction: 0,
-        density: 0.0002,
-        isStatic: isStatic,
-        angle: Math.PI / 2,
-        collisionFilter: { group: bodyGrp },
-        parts: [handRElbow, handRPam]
-    })
-    
+    const handR = createHandLeg({x1 : x + 57, y1 : y - 35, x2 : x + 77, y2 : y - 35, y, labelPrefix: "handR", color, bodyGrp, isStatic});
+
     const constraintHandR = Constraint.create({
         bodyA: handR,
         pointA: { x: -38, y: 0 },
         bodyB: face,
-        pointB: { x: 31, y: -34 },
+        pointB: { x: 20, y: -34 },
     });
 
+    const handL = createHandLeg({x1 : x - 52, y1 : y - 36, x2 : x - 76, y2 : y - 36, y, labelPrefix: "handL", color, bodyGrp, isStatic});
 
-    const handLElbow = Bodies.rectangle(x - 52, y - 36, 70, 10, { label: "handLElbow", render: { fillStyle: color }, chamfer: { radius: 5 } });
-    const handLPam = Bodies.circle(x - 76, y - 36, 15, {label: "handLPam", density: 0.00001, render: { fillStyle: "#fff" } });
-    const handL = Body.create({
-        label: "handL",
-        friction: 0,
-        density: 0.0002,
-        isStatic: isStatic,
-        collisionFilter: { group: bodyGrp },
-        parts: [handLElbow, handLPam]
-    })
     const constraintHandL = Constraint.create({
         bodyA: handL,
-        pointA: { x: 40, y: 0 },
+        pointA: { x: 37, y: 0 },
         bodyB: face,
-        pointB: { x: -25, y: -35 }
+        pointB: { x: -15, y: -35 }
     });
 
     //legs
-    const LegRThai = Bodies.rectangle(x + 60, y + 34, 70, 10, { label: "LegRThai", render: { fillStyle: color }, chamfer: { radius: 5 } });
-    const LegRPam = Bodies.circle(x + 80, y + 34, 15, {label: "LegRPam", density: 0.00001, render: { fillStyle: "#fff" } });
+    const legR = createHandLeg({x1 : x + 57, y1 : y + 34, x2 : x + 77, y2 : y + 34, y, labelPrefix: "legR", color, bodyGrp, isStatic});
 
-    const LegR = Body.create({
-        label: "legR",
-        friction: 0,
-        density: 0.0002,
-        isStatic: isStatic,
-        collisionFilter: { group: bodyGrp },
-        parts: [LegRThai, LegRPam]
-    })
     const constraintLegR = Constraint.create({
-        bodyA: LegR,
-        pointA: { x: -35, y: 0 },
+        bodyA: legR,
+        pointA: { x: -38, y: 0 },
         bodyB: face,
-        pointB: { x: 35, y: 35 }
+        pointB: { x: 20, y: 35 }
     });
 
-    const LegLThai = Bodies.rectangle(x - 56, y + 34, 70, 10, { label: "LegLThai", render: { fillStyle: color }, chamfer: { radius: 5 } });
-    const LegLPam = Bodies.circle(x - 80, y + 34, 15, {label: "LegLPam", density: 0.00001, render: { fillStyle: "#fff" } });
-    const LegL = Body.create({
-        label: "LegL",
-        friction: 0,
-        density: 0.0002,
-        isStatic: isStatic,
-        collisionFilter: { group: bodyGrp },
-        parts: [LegLThai, LegLPam]
-    })
+    const legL = createHandLeg({x1 : x - 52, y1 : y + 34, x2 : x - 76, y2 : y + 34, y, labelPrefix: "legL", color, bodyGrp, isStatic});
+
     const constraintLegL = Constraint.create({
-        bodyA: LegL,
-        pointA: { x: 42, y: 0 },
+        bodyA: legL,
+        pointA: { x: 37, y: 0 },
         bodyB: face,
-        pointB: { x: -25, y: 35 }
+        pointB: { x: -15, y: 35 }
     });
 
     Composite.addBody(charBody, face);
     Composite.addBody(charBody, handL);
     Composite.addBody(charBody, handR);
-    Composite.addBody(charBody, LegL);
-    Composite.addBody(charBody, LegR);
+    Composite.addBody(charBody, legL);
+    Composite.addBody(charBody, legR);
     Composite.addConstraint(charBody, constraintHandL);
     Composite.addConstraint(charBody, constraintHandR);
     Composite.addConstraint(charBody, constraintLegL);
@@ -158,12 +138,40 @@ function createPuppet({x = 100, y = 100, bodyGrp = Body.nextGroup(true), color =
     return charBody;
 }
 const collisionGrp1 = Body.nextGroup(true);
-const puppetA = createPuppet({x: 200, y : 100, bodyGrp: collisionGrp1, color : "pink", isStatic : true});
-// const pointALH = puppetA.bodies.find(body => body.label === "handL");
-// const pointARL = puppetA.bodies.find(body => body.label === "legR");
-const puppetB = createPuppet({x : 300, y : 300, bodyGrp: collisionGrp1, color: "white", isStatic : true});
-// const pointBLH = puppetB.bodies.find(body => body.label === "handL");
 
+const puppetCount = 4;
+const puppetArr = [];
+
+for(let i = 0; i < puppetCount; i++) {
+    puppetArr.push(createPuppet({ x: i * 150 + 500, y: i * 150 + 80, bodyGrp: collisionGrp1, color: "pink", isStatic: false }));
+}
+
+puppetArr.forEach((puppet,index) => {   
+    
+    if(index === 0) {
+        const pointALH = puppet.bodies.find(body => body.label === "handL");
+        const mainPoint = Constraint.create({
+            bodyA: pointALH,
+            pointB: Vector.clone(pointALH.position),
+            stiffness: 1,
+            length: 0
+        })
+        
+        Composite.add(world, [mainPoint, puppet]);
+    }else{
+        const pointARL = puppetArr[index - 1].bodies.find(body => body.label === "legR");
+        const pointBRL = puppet.bodies.find(body => body.label === "handL");
+        const connectPoint = Constraint.create({
+            bodyA: pointARL,
+            pointA : { x: 25, y: 0 },
+            bodyB: pointBRL,
+            pointB : { x: -25, y: 0 },
+            stiffness: 1,
+            length: 0
+        })
+        Composite.add(world, [connectPoint, puppet]);
+    }
+})
 
 // const mainPoint = Constraint.create({
 //     bodyA: pointALH,
@@ -172,24 +180,23 @@ const puppetB = createPuppet({x : 300, y : 300, bodyGrp: collisionGrp1, color: "
 //     length: 0
 // })
 
-
 // const connectPoint = Constraint.create({
 //     bodyA: pointARL,
-//     pointA: {x : 50, y : 0},
-//     bodyB: pointBLH,
+//     pointA : { x: 25, y: 0 },
+//     bodyB: pointBRL,
+//     pointB : { x: -25, y: 0 },
 //     stiffness: 1,
 //     length: 0
 // })
 
-
-Composite.add(world, [puppetA]);
+// Composite.add(world, [puppetA, puppetB, mainPoint, connectPoint]);
 
 Composite.add(world, [
     // walls
-    Bodies.rectangle(400, 0, 800, 50, { friction: 1, restitution: 0.8, isStatic: true }),
-    Bodies.rectangle(400, 600, 800, 50, { friction: 1, restitution: 0.8, isStatic: true }),
-    Bodies.rectangle(800, 300, 50, 600, { friction: 1, restitution: 0.8, isStatic: true }),
-    Bodies.rectangle(0, 300, 50, 600, { friction: 1, restitution: 0.8, isStatic: true })
+    Bodies.rectangle(960 - 100, 0, innerWidth, 50, { isStatic: true }),
+    Bodies.rectangle(960 - 100, innerHeight , innerWidth, 50, { isStatic: true }),
+    Bodies.rectangle(0, 450, 50, innerHeight, { isStatic: true }),
+    Bodies.rectangle( innerWidth , 450, 50, innerHeight, { isStatic: true }),
 ]);
 
 // run the renderer
