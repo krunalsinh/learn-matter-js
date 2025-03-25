@@ -17,7 +17,8 @@ var Engine = Matter.Engine,
     Vector = Matter.Vector,
     Vertices = Matter.Vertices,
     Svg = Matter.Svg,
-    Events = Matter.Events;
+    Events = Matter.Events,
+    World = Matter.World;
 
 
 // provide concave decomposition support library
@@ -55,36 +56,69 @@ const render = Render.create({
     },
 });
 
- // add revolute constraint
- var body = Bodies.rectangle(innerWidth / 2, innerHeight / 2, 200, 20);
- var constraint = Constraint.create({
-     pointA: { x: innerWidth / 2, y: innerHeight / 2 },
-     bodyB: body,
-     length: 0
- });
-//  Composite.add(world, [body, constraint]);
+// add revolute constraint
 
- Composite.add(world, [body, constraint]);
 
-     // add damped soft global constraint
-     var bodyA = Bodies.polygon(500, 400, 6, 30);
-     var bodyB = Bodies.polygon(600, 400, 7, 60);
-     
-     var constraint = Constraint.create({
-         bodyA: bodyA,
-         pointA: { x: -10, y: -10 },
-         bodyB: bodyB,
-         pointB: { x: -10, y: -10 },
-         stiffness: 0.001,
-         damping: 0.1
-        });
-        
-        Composite.add(world, [bodyA, bodyB, constraint]);
+// Rectangle dimensions
+const rectWidth = 180;
+const rectHeight = 10;
+
+// Stack position
+const startX = innerWidth / 2 - 400 ;
+const startY = 200;
+
+// Create a stack of rectangles with constraints
+const stack = Composites.stack(startX, startY, 3, 3, 200, 200, (x, y) => {
+    const newX = x + (Math.random() * 200)
+    const rect = Bodies.rectangle(newX, y, rectWidth, rectHeight, {
+        rendDir: Math.random() > 0.5 ? 1 : -1,
+        render: {
+            fillStyle: "blue",
+            strokeStyle: "black",
+            lineWidth: 2
+        }
+    });
+
+    // Create a constraint at the center of each rectangle
+    const constraint = Constraint.create({
+        bodyB: rect,
+        pointA: { x : newX, y }, // Anchor point at the rectangle's center
+        pointB: { x: 0, y: 0 }, // Attach to the center of the body
+        stiffness: 0.7, // Adjust stiffness for flexibility
+        damping: 0.1
+    });
+
+    // Add both the rectangle and constraint to the world
+    Composite.add(world, constraint);
+
+    return rect;
+});
+
+console.log(stack, stack);
+
+
+// Add the stack to the world
+Composite.add(world, stack);
+
+// add damped soft global constraint
+var bodyA = Bodies.polygon(500, 400, 6, 30);
+var bodyB = Bodies.polygon(600, 400, 7, 60);
+
+var constraint = Constraint.create({
+    bodyA: bodyA,
+    pointA: { x: -10, y: -10 },
+    bodyB: bodyB,
+    pointB: { x: -10, y: -10 },
+    stiffness: 0.001,
+    damping: 0.1
+});
+
+Composite.add(world, [bodyA, bodyB, constraint]);
 
 Composite.add(world, [
     // walls
     Bodies.rectangle(960 - 100, 0, innerWidth, 50, { isStatic: true }),
-    Bodies.rectangle(960 - 100, innerHeight, innerWidth, 50, { isStatic: true }),
+    Bodies.rectangle(960 - 100, innerHeight, innerWidth / 2, 50, { isStatic: true }),
     Bodies.rectangle(0, 450, 50, innerHeight, { isStatic: true }),
     Bodies.rectangle(innerWidth, 450, 50, innerHeight, { isStatic: true }),
 ]);
@@ -92,34 +126,49 @@ Composite.add(world, [
 
 
 
-let lastTime = performance.now();
-let counter = 0;
+var lastTime = Common.now();
 Events.on(engine, 'afterUpdate', function (event) {
-    var time = engine.timing.timestamp,
-        timeScale = (event.delta || (1000 / 60)) / 1000;
+    
 
-        const deltaTime = (time - lastTime); 
-        lastTime = time;
+   
 
-        Body.rotate(body, 1 * Math.PI * timeScale, null, true);
-    if(counter > 300){
+    // Body.rotate(body, 1 * Math.PI * 0.01, null, true);
+    if (Common.now() - lastTime >= 500) {
         let color = Common.choose(['#f19648', '#f5d259', '#f55a3c', '#063e7b', '#ececd1']);
-        const circle1 = Matter.Bodies.circle(innerWidth / 2, Math.random() * 100 + 60, Math.random() * 35, {
+        const rendX = (Math.random() * innerWidth - 150)+100;
+        const circle1 = Matter.Bodies.circle(rendX, Math.random() * 100 + 60, Math.random() * 35, {
             isStatic: false,
             render: {
                 fillStyle: color,
                 strokeStyle: '#fff',
                 lineWidth: 1
             },
-            
+
         }, [1])
         Composite.add(world, circle1);
-        counter = 0;
-    }
-    else{
-        counter += deltaTime; 
+        lastTime = Common.now();
     }
     
+    const allBodies = Composite.allBodies(world);
+    
+    for (let i = 0; i < allBodies.length; i++) {
+        const body = allBodies[i];
+        if (body.position.y > innerHeight) {
+            Composite.remove(world, body);
+        }
+    }
+
+    const allStackBodies = Composite.allBodies(stack);
+
+    for (let i = 0; i < allStackBodies.length; i++) {
+        const body = allStackBodies[i];
+        
+        Body.rotate(body, 1 * Math.PI * 0.02 * body.rendDir, null, true);
+    }
+    
+    
+    
+
 });
 
 // run the renderer

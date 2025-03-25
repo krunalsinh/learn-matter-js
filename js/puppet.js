@@ -125,16 +125,8 @@ function createPuppet({ x = 100, y = 100, bodyGrp = Body.nextGroup(true), color 
         pointB: { x: -15, y: 35 }
     });
 
-    Composite.addBody(charBody, face);
-    Composite.addBody(charBody, handL);
-    Composite.addBody(charBody, handR);
-    Composite.addBody(charBody, legL);
-    Composite.addBody(charBody, legR);
-    Composite.addConstraint(charBody, constraintHandL);
-    Composite.addConstraint(charBody, constraintHandR);
-    Composite.addConstraint(charBody, constraintLegL);
-    Composite.addConstraint(charBody, constraintLegR);
-
+    
+    Composite.add(charBody, [face, handL, handR, legL, legR, constraintHandL, constraintHandR, constraintLegL, constraintLegR]);
     return charBody;
 }
 const collisionGrp1 = Body.nextGroup(true);
