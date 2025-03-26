@@ -20,10 +20,8 @@ var Engine = Matter.Engine,
     Events = Matter.Events,
     World = Matter.World;
 
-
 // provide concave decomposition support library
 Common.setDecomp(decomp);
-
 
 // create an engine
 const engine = Engine.create();
@@ -56,64 +54,41 @@ const render = Render.create({
     },
 });
 
-// add revolute constraint
+const box = Bodies.rectangle(innerWidth / 2 - 200, 300, 150, 10, {
+    density: 1,
+    render: {
+        fillStyle: 'red',
+        strokeStyle: 'black',
+        lineWidth: 1
+    }
+})
+const boxPos = Vector.clone(box.position);
+
+const boxConstraint = Constraint.create({
+    pointA: Vector.clone(box.position),
+    bodyB: box,
+    stiffness: 1
+})
+
+const box2 = Bodies.rectangle(innerWidth / 2 - 200, 300, 150, 10, {
+    density: 1,
+    render: {
+        fillStyle: 'red',
+        strokeStyle: 'black',
+        lineWidth: 1
+    }
+})
+const boxPos2 = Vector.clone(box.position);
+const boxConstraint2 = Constraint.create({
+    pointA: Vector.clone(box.position),
+    bodyB: box2,
+    stiffness: 1
+})
 
 
-// Rectangle dimensions
-const rectWidth = 180;
-const rectHeight = 10;
-
-// Stack position
-const startX = innerWidth / 2 - 400 ;
-const startY = 200;
-
-// Create a stack of rectangles with constraints
-const stack = Composites.stack(startX, startY, 3, 3, 200, 200, (x, y) => {
-    const newX = x + (Math.random() * 200)
-    const rect = Bodies.rectangle(newX, y, rectWidth, rectHeight, {
-        rendDir: Math.random() > 0.5 ? 1 : -1,
-        render: {
-            fillStyle: "blue",
-            strokeStyle: "black",
-            lineWidth: 2
-        }
-    });
-
-    // Create a constraint at the center of each rectangle
-    const constraint = Constraint.create({
-        bodyB: rect,
-        pointA: { x : newX, y }, // Anchor point at the rectangle's center
-        pointB: { x: 0, y: 0 }, // Attach to the center of the body
-        stiffness: 0.7, // Adjust stiffness for flexibility
-        damping: 0.1
-    });
-
-    // Add both the rectangle and constraint to the world
-    Composite.add(world, constraint);
-
-    return rect;
-});
-
-console.log(stack, stack);
-
-
-// Add the stack to the world
-Composite.add(world, stack);
-
-// add damped soft global constraint
-var bodyA = Bodies.polygon(500, 400, 6, 30);
-var bodyB = Bodies.polygon(600, 400, 7, 60);
-
-var constraint = Constraint.create({
-    bodyA: bodyA,
-    pointA: { x: -10, y: -10 },
-    bodyB: bodyB,
-    pointB: { x: -10, y: -10 },
-    stiffness: 0.001,
-    damping: 0.1
-});
-
-Composite.add(world, [bodyA, bodyB, constraint]);
+// console.log(boxConstraint.pointA);
+// console.log(box.position);
+Composite.add(world, [box, boxConstraint, box2, boxConstraint2]);
 
 Composite.add(world, [
     // walls
@@ -123,42 +98,51 @@ Composite.add(world, [
     Bodies.rectangle(innerWidth, 450, 50, innerHeight, { isStatic: true }),
 ]);
 
+
+
+
 var lastTime = Common.now();
 Events.on(engine, 'afterUpdate', function (event) {
+
+    var time = engine.timing.timestamp,
+        timeScale = (event.delta || (1000 / 60)) / 1000;
+
 
     // Body.rotate(body, 1 * Math.PI * 0.01, null, true);
     if (Common.now() - lastTime >= 500) {
         let color = Common.choose(['#f19648', '#f5d259', '#f55a3c', '#063e7b', '#ececd1']);
-        const rendX = (Math.random() * innerWidth - 150)+100;
+        const rendX = (Math.random() * innerWidth - 150) + 100;
         const circle1 = Matter.Bodies.circle(rendX, Math.random() * 100 + 60, Math.random() * 35, {
             isStatic: false,
             render: {
                 fillStyle: color,
                 strokeStyle: '#fff',
-                lineWidth: 1
+                lineWidth: 1,
+                density: 0.001
             },
 
         }, [1])
         Composite.add(world, circle1);
         lastTime = Common.now();
     }
-    
+
     const allBodies = Composite.allBodies(world);
-    
+
     for (let i = 0; i < allBodies.length; i++) {
         const body = allBodies[i];
         if (body.position.y > innerHeight) {
             Composite.remove(world, body);
         }
     }
+    // console.log(Math.sin(time * 0.0005));
 
-    const allStackBodies = Composite.allBodies(stack);
+    boxConstraint.pointA.x = boxPos.x + Math.sin(time * 0.0005) * 200;
+    boxConstraint.pointA.y = boxPos.y + Math.cos(time * 0.0005) * 200;
+    Body.rotate(box, 0.05);
+    Body.rotate(box2, -0.05);
 
-    for (let i = 0; i < allStackBodies.length; i++) {
-        const body = allStackBodies[i];
-        
-        Body.rotate(body, 1 * Math.PI * 0.02 * body.rendDir, null, true);
-    }
+
+
 });
 
 // run the renderer
@@ -195,11 +179,6 @@ var handleWindowResize = function () {
     // set the render size to equal window size
     Render.setSize(render, width, height);
 
-    // update the render bounds to fit the scene
-    // Render.lookAt(render, Composite.allBodies(engine.world), {
-    //     x: 50,
-    //     y: 50
-    // });
 };
 
 // add window resize handler
@@ -207,4 +186,31 @@ window.addEventListener('resize', handleWindowResize);
 
 // update canvas size to initial window size
 setTimeout(handleWindowResize, 1000);
+
+
+//add keyboard events
+// boxConstraint.pointA.x = boxPos.x + Math.sin(time * 0.0005) * 200;
+//     boxConstraint.pointA.y = boxPos.y + Math.cos(time * 0.0005) * 200;
+window.addEventListener('keydown', e => {
+    console.log(e.key);
+
+    switch (e.key) {
+        case 'w':
+            boxConstraint2.pointA.y = boxConstraint2.pointA.y - 5;
+            break;
+        case 's':
+            boxConstraint2.pointA.y = boxConstraint2.pointA.y + 5;
+            break;
+        case 'a':
+            boxConstraint2.pointA.x = boxConstraint2.pointA.x - 5;
+            break;
+        case 'd':
+            boxConstraint2.pointA.x = boxConstraint2.pointA.x + 5;
+            break;
+
+        default:
+            break;
+    }
+
+})
 
