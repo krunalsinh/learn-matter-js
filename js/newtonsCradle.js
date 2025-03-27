@@ -55,13 +55,13 @@ const render = Render.create({
 });
 
 //cradle
-function createCradle(x, y, size, count){
+function createCradle(x, y, size, count, length){
     const cradleWrapper = Composite.create({label : "cradle"});
 
     for (let i = 0; i < count; i++) {
         
         const newX = x + i * (size * 2);
-        const circle = Bodies.circle(newX, y, size, { 
+        const circle = Bodies.circle(newX, y + length, size, { 
             inertia: Infinity,
             restitution: 1, 
             friction: 0,
@@ -69,7 +69,7 @@ function createCradle(x, y, size, count){
             slop: size * 0.02
         });
         const circleConstraint = Constraint.create({
-            pointA: { x : newX, y : y - 200},
+            pointA: { x : newX, y : y},
             bodyB : circle
         })
         Composite.addBody(cradleWrapper, circle);
@@ -80,14 +80,14 @@ function createCradle(x, y, size, count){
 
 }
 
-const cradle1 = createCradle(300, 300, 30, 5);
+const cradle1 = createCradle(300, 300, 30, 5, 200);
 Composite.add(world, cradle1);
 Body.translate(cradle1.bodies[0], {x: -140, y : -100})
 
 
-
-
-
+const cradle2 = createCradle(800, 300, 15, 7, 100);
+Composite.add(world, cradle2);
+Body.translate(cradle2.bodies[0], {x: -140, y : -100})
 
 
 // run the renderer
@@ -133,29 +133,4 @@ window.addEventListener('resize', handleWindowResize);
 setTimeout(handleWindowResize, 1000);
 
 
-//add keyboard events
-// boxConstraint.pointA.x = boxPos.x + Math.sin(time * 0.0005) * 200;
-//     boxConstraint.pointA.y = boxPos.y + Math.cos(time * 0.0005) * 200;
-window.addEventListener('keydown', e => {
-    console.log(e.key);
-
-    switch (e.key) {
-        case 'w':
-            boxConstraint2.pointA.y = boxConstraint2.pointA.y - 5;
-            break;
-        case 's':
-            boxConstraint2.pointA.y = boxConstraint2.pointA.y + 5;
-            break;
-        case 'a':
-            boxConstraint2.pointA.x = boxConstraint2.pointA.x - 5;
-            break;
-        case 'd':
-            boxConstraint2.pointA.x = boxConstraint2.pointA.x + 5;
-            break;
-
-        default:
-            break;
-    }
-
-})
 
