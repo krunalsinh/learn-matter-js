@@ -148,7 +148,7 @@ function createDoll(x, y, scale) {
                 radius: [30 * scale, 30 * scale, 30 * scale, 30 * scale]
             },
             render: {
-                fillStyle: 'red'
+                fillStyle: '#666'
             }
         })
 
@@ -541,16 +541,33 @@ window.addEventListener('resize', handleWindowResize);
 // update canvas size to initial window size
 setTimeout(handleWindowResize, 1000);
 
+
+var timeScaleTarget = 0,
+        lastTime = Common.now();
 Events.on(engine, 'afterUpdate', function (event) {
-    var timeScale = (event.delta || (1000 / 60)) / 1000;
-    // console.log(render.bounds.max.y);
+    if(engine.timing.timeScale < 0.1){
+        engine.timing.timeScale = 1;
+    }else{
+        engine.timing.timeScale -= 0.005;
+    }
+    console.log(engine.timing.timeScale);
+    
+
+    // engine.timing.timeScale += (timeScaleTarget - engine.timing.timeScale) * 3 * timeScale;
+    // if (Common.now() - lastTime >= 2000) {
+    //     timeScaleTarget = 0.0005;
+    //     lastTime = Common.now();
+    // }else{
+    //     timeScaleTarget += 0.001
+    // }
+ 
 
     for (var i = 0; i < stack.bodies.length; i += 1) {
         var body = stack.bodies[i];
 
         Body.translate(body, {
-            x: -30 * timeScale,
-            y: -30 * timeScale
+            x: -30 * 0.01,
+            y: -30 * 0.01
         });
 
         if (body.position.x < -50) {
@@ -579,13 +596,11 @@ Events.on(engine, 'afterUpdate', function (event) {
 
     }
 
-    console.log(doll);
-    
     for (i = 0; i < doll.bodies.length; i += 1) {
         var ragdoll = doll.bodies[i],
         bounds = ragdoll.bounds;
         
-        console.log(bounds);
+        // console.log(bounds);
 
         // move ragdolls back to the top of the screen
         if (bounds.min.y > render.bounds.max.y + 500) {
