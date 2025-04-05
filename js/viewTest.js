@@ -66,17 +66,17 @@ const wallView = {
     lineWidth: 3
 };
 
-Composite.add(world, [
-    // walls
+const topWall = Bodies.rectangle(size.width / 2, 0, size.width , 50, { isStatic: true, render : wallView }); 
+const bottomWall = Bodies.rectangle(size.width / 2, size.height, size.width, 50, { isStatic: true, render : wallView }); 
+const rightWall = Bodies.rectangle(size.width, size.height / 2, 50, size.height, { isStatic: true, render : wallView }); 
+const leftWall = Bodies.rectangle(0, size.height / 2, 50, size.height, { isStatic: true, render : wallView }); 
 
-    //top
-    Bodies.rectangle(size.width / 2, 0, size.width , 50, { isStatic: true, render : wallView }),
-    //bottom
-    Bodies.rectangle(size.width / 2, size.height, size.width, 50, { isStatic: true, render : wallView }),
-    //right
-    Bodies.rectangle(size.width, size.height / 2, 50, size.height, { isStatic: true, render : wallView }),
-    //left
-    Bodies.rectangle(0, size.height / 2, 50, size.height, { isStatic: true, render : wallView })
+
+Composite.add(world, [
+    topWall,
+    bottomWall,
+    rightWall,
+    leftWall
 ]);
 
 // run the renderer
@@ -107,6 +107,9 @@ render.mouse = mouse;
 
 // resize event handler
 var handleWindowResize = function () {
+
+    console.log(topWall);
+    
     // get the current window size
     var width = window.innerWidth,
         height = window.innerHeight;
@@ -115,10 +118,10 @@ var handleWindowResize = function () {
     Render.setSize(render, width, height);
 
     // update the render bounds to fit the scene
-    Render.lookAt(render, {
-        min: { x: 0, y: 0 },
-        max: { x: size.width, y: size.height }
-    });
+    // Render.lookAt(render, {
+    //     min: { x: 0, y: 0 },
+    //     max: { x: size.width, y: size.height }
+    // });
 };
 
 // add window resize handler
