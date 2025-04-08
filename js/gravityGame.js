@@ -25,7 +25,7 @@ var Engine = Matter.Engine,
     Query = Matter.Query;
 
 // provide concave decomposition support library
-Common.setDecomp(decomp);
+// Common.setDecomp(decomp);
 
 
 // create an engine
@@ -171,8 +171,8 @@ render.mouse = mouse;
 // resize event handler
 var handleWindowResize = function () {
   // get the current window size
-  var width = innerHeight,
-    height = innerHeight;
+  var width = Math.min(innerHeight, innerWidth),
+  height = Math.min(innerHeight, innerWidth);
 
   // set the render size to equal window size
   Render.setSize(render, width, height);
