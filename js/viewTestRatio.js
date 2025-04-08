@@ -4,7 +4,7 @@ const canvas = document.getElementById('canvas');
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 
-const size = {width : innerWidth, height: innerHeight};
+const size = { width: innerWidth, height: innerHeight };
 
 
 // module aliases
@@ -34,6 +34,9 @@ var engine = Engine.create();
 
 //world
 var world = engine.world;
+
+console.log(Composite);
+
 
 // create a renderer
 var render = Render.create({
@@ -66,18 +69,27 @@ const wallView = {
     lineWidth: 3
 };
 
-const topWall = Bodies.rectangle(size.width / 2, 0, size.width , 50, { isStatic: true, render : wallView }); 
-const bottomWall = Bodies.rectangle(size.width / 2, size.height, size.width, 50, { isStatic: true, render : wallView }); 
-const rightWall = Bodies.rectangle(size.width, size.height / 2, 50, size.height, { isStatic: true, render : wallView }); 
-const leftWall = Bodies.rectangle(0, size.height / 2, 50, size.height, { isStatic: true, render : wallView }); 
 
+function createWall(x, y, width, height) {
+    return Bodies.rectangle(x, y, width, height, { isStatic: true, render: wallView });
+}
 
 Composite.add(world, [
-    topWall,
-    bottomWall,
-    rightWall,
-    leftWall
+    createWall(innerWidth / 2, 0, innerWidth, 50),
+    createWall(innerWidth / 2, innerHeight, innerWidth, 50),
+    createWall(innerWidth, innerHeight / 2, 50, innerHeight), 
+    createWall(0, innerHeight / 2, 50, innerHeight)
 ]);
+
+
+var stack = Composites.stack(200, 606 - 25.25 - 5 * 40, 10, 5, 0, 0, function (x, y) {
+    return Bodies.rectangle(x, y, 40, 40);
+});
+
+Composite.add(world, stack);
+
+
+
 
 // run the renderer
 Render.run(render);
@@ -108,8 +120,8 @@ render.mouse = mouse;
 // resize event handler
 var handleWindowResize = function () {
 
-    console.log(topWall);
-    
+    // console.log(topWall);
+
     // get the current window size
     var width = window.innerWidth,
         height = window.innerHeight;
@@ -118,10 +130,10 @@ var handleWindowResize = function () {
     Render.setSize(render, width, height);
 
     // update the render bounds to fit the scene
-    // Render.lookAt(render, {
-    //     min: { x: 0, y: 0 },
-    //     max: { x: size.width, y: size.height }
-    // });
+    Render.lookAt(render, {
+        min: { x: 0, y: 0 },
+        max: { x: size.width, y: size.height }
+    });
 };
 
 // add window resize handler
