@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gravity Game</title>
+    <link rel="stylesheet" href="./style/common-style.css">
+    <style>
+        .gravity-count {
+            position: fixed;
+            top: 50px;
+            left: 50px;
+            color: #fff;
+            font-size: 16px;
+        }
+
+        #initStart {
+            position: absolute;
+            width: 100vw;
+            height: 100vh;
+            opacity: 0;
+        }
+
+        #initStart:checked,
+        #initStart:checked+label {
+            display: none;
+        }
+        .init-screen {
+            display: none;
+        }
+
+        .init-screen label {
+            display: block;
+            display: grid;
+            place-items: center;
+            width: 100vw;
+            height: 100vh;
+            background-color: rgba(255, 255, 255, 0.7);
+        }
+
+        .init-screen label span {
+            padding: 10px;
+            background-color: #000;
+            color: #fff;
+        }
+
+        .init-screen {
+            position: fixed;
+            top: 0px;
+            left: 0px;
+            width: 100vw;
+            height: 100vw;
+        }
+    </style>
+</head>
+
+<body>
+    <canvas id="canvas"></canvas>
+    <div class="gravity-count">
+        <div>
+            <label>X Axis : </label>
+            <span id="xaxis"></span>
+        </div>
+        <div>
+            <label>Y Axis : </label>
+            <span id="yaxis"></span>
+        </div>
+        <div>
+            <label>Z Axis : </label>
+            <span id="zaxis"></span>
+        </div>
+    </div>
+
+    <div class="init-screen">
+        <input type="checkbox" id="initStart">
+        <label for="initStart">
+            <span>Start Animation</span>
+        </label>
+    </div>
+    <svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" fill="none" style="display: none;" id="mazeSVG">
+        <rect width="512" height="512" fill="white"/>
+        <path d="M28 491.5V28H38.5V258.5H238V151.5H350V164H248.5V364.5H350V374H238V272.5H38.5V491.5H28Z" stroke="black"/>
+        <path d="M110 28V164H123V41.5H455V251L335 250.5V261.5L455 261V478H123V351H110V491.5H470V28H110Z" stroke="black"/>
+        </svg>
+    <script src="./js/matter.min.js"></script>
+    <script src="./js/pathseg.js"></script>
+    <script src="./js/decomp.min.js"></script> 
+    <script src="./js/gravityGame2.js"></script>
+</body>
+
+</html>
