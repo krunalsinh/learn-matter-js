@@ -40,7 +40,7 @@ window.addEventListener("load", () => {
         options: {
             width: size.width,
             height: size.height,
-            background: "#666",
+            background: "#111",
             pixelRatio: window.devicePixelRatio,
             wireframes: false,
             showVelocity: false,
@@ -50,7 +50,7 @@ window.addEventListener("load", () => {
             showDebug: false,
             showSleeping: false,
             showAxes: false,
-            wireframeBackground: "#666",
+            wireframeBackground: "#111",
             lineWidth: 1
         }
     });
@@ -84,14 +84,14 @@ window.addEventListener("load", () => {
     Composite.add(world, player);
 
     
-    var gate1 = Bodies.rectangle(130, 290, 80, 20, {
+    var gate1 = Bodies.rectangle(132, 290, 68, 20, {
         isStatic: true,
         render: {
-            fillStyle: "blue"
+            fillStyle: "transparent"
         },
         label: "gate1"
     });
-    var gate2 = Bodies.rectangle(130, 620, 80, 20, {
+    var gate2 = Bodies.rectangle(640, 675, 80, 20, {
         isStatic: true,
         render: wallView,
         label: "gate2",
@@ -118,7 +118,7 @@ window.addEventListener("load", () => {
     Composite.add(
         world,
         Bodies.fromVertices(
-            300,
+            400,
             400,
             vertexSets,
             {
@@ -213,14 +213,21 @@ window.addEventListener("load", () => {
                 console.log("collide");
                 
 
-                const closedGate1 = Bodies.rectangle(gate1.position.x, gate1.position.y - 80, 80, 20, {
+                const closedGate1 = Bodies.rectangle(gate1.position.x, gate1.position.y - 120, 68, 20, {
                     isStatic: true,
                     label: 'gate1-closed',
+                    render : {
+                        fillStyle: 'red'
+                    }
                   });
                   
                   Composite.remove(world, gate1);      
                   Composite.add(world, closedGate1);   
 
+            }
+
+            if (labels.includes("player") && labels.includes("gate2")) {
+                Composite.remove(world, gate2); 
             }
         });
     });
