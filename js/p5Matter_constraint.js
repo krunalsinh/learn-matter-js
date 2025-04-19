@@ -6,28 +6,59 @@ var Engine = Matter.Engine,
   Bodies = Matter.Bodies,
   Composite = Matter.Composite,
   Composites = Matter.Composites,
-  Constraint = Matter.Constraint;
+  Constraint = Matter.Constraint,
+  MouseConstraint = Matter.MouseConstraint,
+  Mouse = Matter.Mouse,
+  Common = Matter.Common;
 
 var world,
   engine,
+  mConstraint,
   chain,
   grounds = [];
 
 //p5 functions
 function setup() {
-  createCanvas(innerWidth, innerHeight);
+  // create p5 canvas
+  var canvas = createCanvas(innerWidth, innerHeight);
 
+  //matter engine and world setup
   engine = Engine.create();
   world = engine.world;
 
   var runner = Runner.create();
   Runner.run(runner, engine);
 
+  //create ground
   grounds = [
     new CreateBody({ x: width / 2, y: height, w: width, h: 30, angle: 0, isStatic: true, color: "blue" }),
   ];
 
+  //create chain and chain hook constraint
   chain = new CreateChain(200, 100, 10);
+
+  const chainConst = Constraint.create({
+    pointA: {
+      x: 300,
+      y: 0
+    },
+    bodyB: chain.bodiesStack.bodies[0]
+  })
+  Composite.add(world, chainConst);
+  
+  //create mouse constraint
+  const canvasMouse = Mouse.create(canvas.elt);
+  const options = {
+    mouse: canvasMouse
+  }
+  mConstraint = MouseConstraint.create(engine, options)
+  Composite.add(world, mConstraint);
+  
+  console.log(mConstraint);
+  
+  //set pixel ratio
+  canvasMouse.pixelRatio = pixelDensity();
+
 
 }
 
@@ -42,13 +73,23 @@ function draw() {
 
   chain.show();
 
+  if(mConstraint.body){
+    var pos = mConstraint.body.position;
+    var offset = mConstraint.constraint.pointB;
+    var m = mConstraint.mouse.position;
+    stroke(0,255,0);
+    
+    // console.log(pos, m);
+    console.log(mConstraint);
+    line(pos.x + offset.x, pos.y + offset.y, m.x, m.y);
+  }
+
   // console.log("world bodies => " + (world.bodies.length - 3),", boxes Arr => "+ boxes.length);
 }
 
 //custom functions
 class CreateBody {
   constructor({ x, y, r = 0, w = 0, h = 0, isStatic = false, angle = 0, color = "" }) {
-    console.log(color);
     this.x = x;
     this.y = y;
     this.w = w;
@@ -100,6 +141,7 @@ class CreateChain {
     this.y = y;
     this.count = count;
     this.group = Body.nextGroup(true);
+    this.color = Common.choose(['#f19648', '#f5d259', '#f55a3c', '#063e7b', '#ececd1']);
     this.bodyOption = {
       density: 1,
       friction: 0.1,
@@ -108,9 +150,9 @@ class CreateChain {
     };
     this.bodiesStack = Composites.stack(this.x, this.y, this.count, 1, 10, 10, (x, y, col, row) => {
 
-      const body = Math.random() < 0.5 ? 
-      Bodies.rectangle(x, y, random(10, 50), random(10, 50), this.bodyOption) : 
-      Bodies.circle(x, y, random(10, 20), this.bodyOption);
+      const body = Math.random() < 0.5 ?
+        Bodies.rectangle(x, y, random(10, 50), random(10, 50), this.bodyOption) :
+        Bodies.circle(x, y, random(10, 20), this.bodyOption);
       return body;
     });
     Composites.chain(this.bodiesStack, 0.5, 0, -0.5, 0, {
@@ -119,8 +161,6 @@ class CreateChain {
 
     })
     Composite.add(world, this.bodiesStack);
-
-    console.log(this.bodiesStack);
 
   }
 
@@ -134,12 +174,13 @@ class CreateChain {
       var label = body.label;
       var width = bounds.max.x - bounds.min.x;
       var height = bounds.max.y - bounds.min.y;
-      
-      fill("red");
+
+      fill(body.render.fillStyle);
       stroke("white");
       strokeWeight(1);
       push();
       translate(pos.x, pos.y);
+
       if (label === "Rectangle Body") {
         rotate(angle);
         rectMode(CENTER);
