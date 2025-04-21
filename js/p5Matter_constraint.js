@@ -9,7 +9,8 @@ var Engine = Matter.Engine,
   Constraint = Matter.Constraint,
   MouseConstraint = Matter.MouseConstraint,
   Mouse = Matter.Mouse,
-  Common = Matter.Common;
+  Common = Matter.Common,
+  Events = Matter.Events;
 
 var world,
   engine,
@@ -193,3 +194,4 @@ class CreateChain {
   }
 
 }
+
