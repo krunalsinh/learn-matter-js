@@ -135,11 +135,13 @@ class createStack {
     this.radius = 15;
     this.spacingX = this.radius * 4 + 10;
     this.spacingY = this.radius * 4 + 20;
+    this.floorHeight = 100;
     
     this.cols = Math.floor(width / this.spacingX);
-    this.rows = Math.floor((height - 100) / this.spacingY);
+    this.rows = Math.floor((height - this.floorHeight * 2) / this.spacingY);
     
     this.dotsStack = Composite.create();
+    this.floorStack = Composite.create();
 
     for (let row = 0; row < this.rows; row++) {
       for (let col = 0; col < this.cols; col++) {
@@ -158,12 +160,50 @@ class createStack {
       }
     }
 
-    Composite.add(engine.world, this.dotsStack);
+    for (let col = 0; col < this.cols; col++) {
+      let x = col * this.spacingX + initX;
+      let y = height - (this.floorHeight / 2);
+      
+      let fillStyle =  "#fff";
+
+      let rect = Bodies.rectangle(x, y, 15, this.floorHeight, {
+        isStatic: true,
+        render: { fillStyle }
+      });
+
+      Composite.add(this.floorStack, rect);
+    }
+    
+
+    Composite.add(engine.world, [this.dotsStack, this.floorStack]);
   }
 
   show() {
     for (let i = 0; i < this.dotsStack.bodies.length; i++) {
       let body = this.dotsStack.bodies[i];
+      let pos = body.position;
+      let label = body.label;
+      let bounds = body.bounds;
+      let width = bounds.max.x - bounds.min.x;
+      let height = bounds.max.y - bounds.min.y;
+
+      fill(body.render.fillStyle);
+      stroke("white");
+      strokeWeight(1);
+      push();
+      translate(pos.x, pos.y);
+
+      if (label === "Rectangle Body") {
+        rotate(body.angle);
+        rectMode(CENTER);
+        rect(0, 0, width, height);
+      } else {
+        circle(0, 0, this.radius * 2);
+      }
+      pop();
+    }
+    for (let i = 0; i < this.floorStack.bodies.length; i++) {
+      let body = this.floorStack.bodies[i];
       let pos = body.position;
       let label = body.label;
       let bounds = body.bounds;
