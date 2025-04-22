@@ -14,7 +14,7 @@ var world,
   engine,
   grounds = [], rect1, mConstraint, reached = false, playerImg, boomParticles = [], collideParticles = [];
 const labelWall = "wall", labelFinalWall = "finalWall", labelPlayer = "Player1", labelBoomParticle = "boomParticle";
-const wallsCategory = 0x0001;
+const wallsCategory = 0x0001, boomParticleCategory = 0x0002;
 
 //p5 functions
 function setup() {
@@ -102,12 +102,22 @@ function setup() {
           }
         }
       }
+      if (pair.bodyA.label === labelWall && pair.bodyB.label === labelBoomParticle) {
+        
+        boomParticles = boomParticles.filter(particle => {
+          return particle.body.id != pair.bodyB.id
+        })
+        if(collideParticles.length < 1){
+          collideParticles.push(new CollideParticle({ x: pair.bodyB.position.x, y: pair.bodyB.position.y, r: 10 }))
+        }
+      }
     }
   });
 }
 
 function draw() {
-
+  // console.log(rect1);
+  
   background("#fffbe8");
 
   for (let i = 0; i < grounds.length; i++) {
@@ -117,7 +127,13 @@ function draw() {
   rect1.show();
 
   for (let i = 0; i < boomParticles.length; i++) {
-    boomParticles[i].show();
+    boomParticles[i].showBooParticle();
+  }
+
+  for (let i = 0; i < collideParticles.length; i++) {
+    collideParticles[i].update();
+    // console.log(collideParticles);
+    
   }
 
 }
@@ -190,6 +206,51 @@ class CreateBody {
 
 }
 
+class BoomParticle extends CreateBody{
+  constructor({ x, y, r , w, h , bodyOption }){
+    super({ x, y, r , w, h , bodyOption })
+
+    this.history = [];
+  }
+  showBooParticle(){
+    this.show();
+
+    this.history.push(createVector(this.body.position.x, this.body.position.y))
+
+    for (let i = 0; i < this.history.length; i++) {
+      
+      fill(this.body.render.fillStyle);
+      circle(this.history[i].x, this.history[i].y, (this.r * (i * 0.2) ) * 2);
+    }
+
+    if(this.history.length > 5){
+      this.history.splice(0, 1);
+      
+      
+    }
+  }
+}
+
+class CollideParticle extends CreateBody{
+  constructor({ x, y, r , w, h , bodyOption }){
+    super({ x, y, r , w, h , bodyOption })
+  }
+  update(){
+    console.log(this.body.circleRadius);
+    
+    
+    this.show();
+    this.body.circleRadius -= 0.1;
+    if(this.body.circleRadius < 0.9){
+      collideParticles = collideParticles.filter(particle => {
+        return particle.body.id != this.body.id
+      })
+     
+    }
+    
+  }
+}
+
 function mouseClicked() {
   const distX = rect1.body.position.x - mouseX, maxVelocity = 5, incrAngleVelocity = 0.08;
   const currentVelocity = rect1.body.angularVelocity;
@@ -221,10 +282,13 @@ function mouseClicked() {
       strokeStyle: "#EBB978",
       lineWidth: 3,
     },
+    collisionFilter : {
+      category: boomParticleCategory
+    }
     
   };
 
-  const boomParticle = new CreateBody({ x: bodyCurrentPos.x, y: bodyCurrentPos.y, r: 8, bodyOption : booParticleOption });
+  const boomParticle = new BoomParticle({ x: bodyCurrentPos.x, y: bodyCurrentPos.y, r: 5, bodyOption : booParticleOption });
   Body.setVelocity(boomParticle.body, { x: velocityX * -1, y: -10 * -1 });
   boomParticles.push(
     boomParticle
