@@ -13,7 +13,8 @@ var Engine = Matter.Engine,
 var world,
   engine,
   grounds = [], rect1, mConstraint, reached = false, playerImg, boomParticles = [], collideParticles = [];
-const labelRedBox = "redBox", labelPlayer = "Player1", labelBoomParticle = "boomParticle";
+const labelWall = "wall", labelFinalWall = "finalWall", labelPlayer = "Player1", labelBoomParticle = "boomParticle";
+const wallsCategory = 0x0001;
 
 //p5 functions
 function setup() {
@@ -25,14 +26,48 @@ function setup() {
   var runner = Runner.create();
   Runner.run(runner, engine);
 
+  const groundOptions = {
+    isStatic: true,
+    density: 1,
+    friction: 0.8,
+    restitution: 0.5,
+    label: labelWall,
+    render: {
+      fillStyle: "#abdeed",
+      strokeStyle: "#01368a",
+      lineWidth: 3,
+    },
+    collisionFilter: {
+      category: wallsCategory
+    }
+  };
+  const finalBoxOptions = {
+    ...groundOptions, label: labelFinalWall,
+  };
+
+  // console.log(finalBoxOptions);
+
   grounds = [
-    new CreateBody({ x: width / 2, y: height, w: width, h: 60, angle: 0, isStatic: true, color: "#abdeed", strokeColor: "#01368a" }),
-    new CreateBody({ x: 300, y: 200, w: 300, h: 30, angle: 0, isStatic: true, color: "#abdeed", strokeColor: "#01368a" }),
-    new CreateBody({ x: 500, y: 400, w: 300, h: 30, angle: 0, isStatic: true, color: "#abdeed", strokeColor: "#01368a" }),
-    new CreateBody({ x: 1200, y: 200, w: 300, h: 30, angle: 0, isStatic: true, color: "#abdeed", strokeColor: "#01368a", label: labelRedBox })
+    new CreateBody({ x: width / 2, y: height, w: width, h: 60, bodyOption: groundOptions }),
+    new CreateBody({ x: 300, y: 200, w: 300, h: 30, bodyOption: groundOptions }),
+    new CreateBody({ x: 500, y: 400, w: 300, h: 30, bodyOption: groundOptions }),
+    new CreateBody({ x: 1200, y: 200, w: 300, h: 30, bodyOption: finalBoxOptions })
   ];
 
-  rect1 = new CreateBody({ x: width / 2, y: 50, w: 50, h: 50, angle: 0, isStatic: false, color: "#111", label: labelPlayer });
+  const playerOptions = {
+    density: 1,
+    friction: 0.8,
+    restitution: 0.5,
+    label: labelPlayer,
+    collisionFilter: {
+      mask: wallsCategory
+    }
+
+  };
+  rect1 = new CreateBody({ x: width / 2, y: 50, w: 50, h: 50, bodyOption: playerOptions });
+
+  // console.log(rect1);
+  
 
 
   //create mouse constraint
@@ -48,13 +83,17 @@ function setup() {
   //set pixel ratio
   canvasMouse.pixelRatio = pixelDensity();
 
+  //check collision for red box and player
   Events.on(engine, 'collisionActive', function (event) {
     var pairs = event.pairs;
 
     // change object colours to show those starting a collision
+
+    // console.log(pairs);
+    
     for (var i = 0; i < pairs.length; i++) {
       var pair = pairs[i];
-      if (pair.bodyA.label === labelRedBox && pair.bodyB.label === labelPlayer) {
+      if (pair.bodyA.label === labelFinalWall && pair.bodyB.label === labelPlayer) {
         if (pair.bodyB.velocity.x === 0 && pair.bodyB.velocity.y === 0) {
           pair.bodyA.render.fillStyle = 'green';
           if (!reached) {
@@ -81,36 +120,35 @@ function draw() {
     boomParticles[i].show();
   }
 
-
 }
 
 //custom functions
 class CreateBody {
-  constructor({ x, y, r = 0, w = 0, h = 0, isStatic = false, angle = 0, color = "", label = "body", strokeColor = "", collisionCategory = 0x0001 }) {
-    // console.log(color);
+  constructor({ x, y, r = 0, w = 0, h = 0, bodyOption }) {
     this.x = x;
     this.y = y;
     this.w = w;
     this.h = h;
     this.r = r;
-    this.color = color !== "" ? color : `hsl(${Math.floor(Math.random() * 360)}, 50%, 50%)`;
-    this.strokeColor = strokeColor !== "" ? strokeColor : `hsl(${Math.floor(Math.random() * 360)}, 50%, 50%)`;
-    this.bodyOption = {
-      isStatic: isStatic,
+    this.color = `hsl(${Math.floor(Math.random() * 360)}, 50%, 50%)`;
+    this.strokeColor = `hsl(${Math.floor(Math.random() * 360)}, 50%, 50%)`;
+    this.bodyOption1 = {
+      isStatic: "false",
       density: 0.1,
       friction: 0.8,
       restitution: 0.5,
-      angle: angle,
-      label: label,
+      angle: 0,
+      label: "body",
       render: {
         fillStyle: this.color,
-        strokeStyle: this.strokeColor,
+        strokeStyle: this.color,
         lineWidth: 3,
       },
       collisionFilter: {
-        category: collisionCategory
+        category: 0x0001
       },
     };
+    this.bodyOption = bodyOption !== undefined ? bodyOption : this.bodyOption1;
     this.body = this.r === 0 ? Bodies.rectangle(x, y, w, h, this.bodyOption) : Bodies.circle(x, y, r, this.bodyOption);
 
     Composite.add(engine.world, this.body);
@@ -135,11 +173,7 @@ class CreateBody {
     push();
     translate(pos.x, pos.y);
     if (this.body.label === labelPlayer) {
-      // console.log("called");
       rotate(angle);
-      // image(playerImg, 0, 0, this.w, this.h);
-      // image(playerImg, 0, 0, this.w, this.h, 0, 0,  playerImg.width,  playerImg.height, COVER);
-      // image(playerImg, -this.w, -this.h, this.w * 2, this.h * 2)
       imageMode(CENTER);
       image(playerImg, 0, 0, this.w, this.h);
     }
@@ -177,7 +211,20 @@ function mouseClicked() {
   Body.setVelocity(rect1.body, { x: velocityX, y: -10 });
   Body.setAngularVelocity(rect1.body, angularVelocity);
 
-  const boomParticle = new CreateBody({ x: bodyCurrentPos.x, y: bodyCurrentPos.y, r: 5, w: 300, h: 30, angle: 0, isStatic: false, color: "#abdeed", strokeColor: "#01368a", label: labelBoomParticle, collisionCategory : 0x0002 });
+  const booParticleOption = {
+    density: 1,
+    friction: 0.8,
+    restitution: 0.5,
+    label: labelBoomParticle,
+    render: {
+      fillStyle: "#EBB978",
+      strokeStyle: "#EBB978",
+      lineWidth: 3,
+    },
+    
+  };
+
+  const boomParticle = new CreateBody({ x: bodyCurrentPos.x, y: bodyCurrentPos.y, r: 8, bodyOption : booParticleOption });
   Body.setVelocity(boomParticle.body, { x: velocityX * -1, y: -10 * -1 });
   boomParticles.push(
     boomParticle
@@ -201,7 +248,6 @@ function startConfetti() {
     }
 
     var particleCount = 50 * (timeLeft / duration);
-    // since particles fall down, start a bit higher than random
     confetti({ ...defaults, particleCount, origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 } });
     confetti({ ...defaults, particleCount, origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 } });
   }, 250);
