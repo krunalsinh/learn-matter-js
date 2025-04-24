@@ -65,6 +65,13 @@ function setup() {
     new CreateBody({ x: 750, y: 580, w: 300, h: 150, bodyOption: groundOptions }),
     new CreateBody({ x: 1200, y: 200, w: 300, h: 30, bodyOption: finalBoxOptions }),
     new CreateBody({ x: 1200, y: 135, w: 100, h: 100, bodyOption: flagObstacleOption }),
+    new CreateBody({ x: 1500, y: 400, w: 100, h: 100, bodyOption: groundOptions }),
+    new CreateBody({ x: 1800, y: 500, w: 100, h: 100, bodyOption: groundOptions }),
+    new CreateBody({ x: 2000, y: 700, w: 100, h: 100, bodyOption: groundOptions }),
+    new CreateBody({ x: 2200, y: 0, w: 30, h: 1200, bodyOption: groundOptions }),
+    new CreateBody({ x: 2500, y: 200, w: 300, h: 30, bodyOption: finalBoxOptions }),
+    new CreateBody({ x: 2500, y: 135, w: 100, h: 100, bodyOption: flagObstacleOption }),
+
   ];
 
   const playerOptions = {
