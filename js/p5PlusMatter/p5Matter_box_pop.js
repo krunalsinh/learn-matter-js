@@ -105,11 +105,26 @@ function setup() {
       if (pair.bodyA.label === labelWall && pair.bodyB.label === labelBoomParticle) {
         
         boomParticles = boomParticles.filter(particle => {
-          return particle.body.id != pair.bodyB.id
+          if(particle.body.id === pair.bodyB.id){
+            particle.removeFromWorld()
+          }else{
+            return particle;
+          }
         })
-        if(collideParticles.length < 1){
-          collideParticles.push(new CollideParticle({ x: pair.bodyB.position.x, y: pair.bodyB.position.y, r: 10 }))
+
+        for (let i = 0; i < 5; i++) {
+          const particle = new CollideParticle({ x: pair.bodyB.position.x, y: pair.bodyB.position.y, r: pair.bodyB.circleRadius});
+          var forceMagnitude = (0.03 * particle.body.mass) + Math.random() * 0.03;
+
+          // apply the force over a single update
+          Body.applyForce(particle.body, particle.body.position, { 
+              x: (forceMagnitude + Math.random() * forceMagnitude) * random([1, -1]), 
+              y: -forceMagnitude + Math.random() * -forceMagnitude
+          });
+          Body.setVelocity(particle.body, { x: Math.random() *  random(-5, 5), y: Math.random() * random(-5, 5)});
+          collideParticles.push(particle);
         }
+        
       }
     }
   });
@@ -198,7 +213,7 @@ class CreateBody {
       rectMode(CENTER);
       rect(0, 0, this.w, this.h);
     } else {
-      circle(0, 0, this.r * 2);
+      circle(0, 0, this.body.circleRadius * 2);
     }
 
     pop();
@@ -233,17 +248,24 @@ class BoomParticle extends CreateBody{
 
 class CollideParticle extends CreateBody{
   constructor({ x, y, r , w, h , bodyOption }){
-    super({ x, y, r , w, h , bodyOption })
+    super({ x, y, r , w, h , bodyOption });
+    this.scale = 1;
   }
   update(){
-    console.log(this.body.circleRadius);
+    // console.log(this.body);
     
     
     this.show();
-    this.body.circleRadius -= 0.1;
+
+    this.scale -= 0.001;
+    
+    // Matter.Body.scale(this.body, this.scale, this.scale, {x : this.body.position.x, y : this.body.position.y});
+
+    // this.body.circleRadius -= 0.1;
     if(this.body.circleRadius < 0.9){
+      this.removeFromWorld();
       collideParticles = collideParticles.filter(particle => {
-        return particle.body.id != this.body.id
+        return particle.body.id !== this.body.id
       })
      
     }
