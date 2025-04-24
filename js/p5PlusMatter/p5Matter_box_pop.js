@@ -12,13 +12,16 @@ var Engine = Matter.Engine,
 
 var world,
   engine,
-  grounds = [], rect1, mConstraint, reached = false, playerImg, boomParticles = [], collideParticles = [];
-const labelWall = "wall", labelFinalWall = "finalWall", labelPlayer = "Player1", labelBoomParticle = "boomParticle";
-const wallsCategory = 0x0001, boomParticleCategory = 0x0002;
+  grounds = [], rect1, mConstraint, reached = false, playerImg, boomParticles = [], collideParticles = [], pattern, flagImg;
+const labelWall = "wall", labelFinalWall = "finalWall", labelPlayer = "Player1", labelBoomParticle = "boomParticle", labelFlagObstacle = "flagObstacle";
+const wallsCategory = 0x0001, boomParticleCategory = 0x0002, flagObstacleCategory = 0x0003, playerCategory = 0x0004;
 
 //p5 functions
 function setup() {
   var canvas = createCanvas(innerWidth, innerHeight);
+
+  pattern = createPattern(); // create the pattern
+  // noLoop(); // stop draw() since background is static
 
   engine = Engine.create();
   world = engine.world;
@@ -45,13 +48,23 @@ function setup() {
     ...groundOptions, label: labelFinalWall,
   };
 
+  const flagObstacleOption = {
+    ...groundOptions, 
+    label: labelFlagObstacle,
+    collisionFilter: {
+      category: flagObstacleCategory,
+      mask: wallsCategory
+    }
+  }
+
   // console.log(finalBoxOptions);
 
   grounds = [
     new CreateBody({ x: width / 2, y: height, w: width, h: 60, bodyOption: groundOptions }),
-    new CreateBody({ x: 300, y: 200, w: 300, h: 30, bodyOption: groundOptions }),
-    new CreateBody({ x: 500, y: 400, w: 300, h: 30, bodyOption: groundOptions }),
-    new CreateBody({ x: 1200, y: 200, w: 300, h: 30, bodyOption: finalBoxOptions })
+    new CreateBody({ x: 300, y: 350, w: 300, h: 30, bodyOption: groundOptions }),
+    new CreateBody({ x: 750, y: 580, w: 300, h: 150, bodyOption: groundOptions }),
+    new CreateBody({ x: 1200, y: 200, w: 300, h: 30, bodyOption: finalBoxOptions }),
+    new CreateBody({ x: 1200, y: 135, w: 100, h: 100, bodyOption: flagObstacleOption }),
   ];
 
   const playerOptions = {
@@ -60,14 +73,15 @@ function setup() {
     restitution: 0.5,
     label: labelPlayer,
     collisionFilter: {
-      mask: wallsCategory
+      mask: wallsCategory,
+      category: playerCategory
     }
 
   };
   rect1 = new CreateBody({ x: width / 2, y: 50, w: 50, h: 50, bodyOption: playerOptions });
 
   // console.log(rect1);
-  
+
 
 
   //create mouse constraint
@@ -84,13 +98,59 @@ function setup() {
   canvasMouse.pixelRatio = pixelDensity();
 
   //check collision for red box and player
+  Events.on(engine, 'collisionStart', function (event) {
+    var pairs = event.pairs;
+
+    for (var i = 0; i < pairs.length; i++) {
+      var pair = pairs[i];
+      if ((pair.bodyA.label === labelWall || pair.bodyA.label === labelFinalWall) && pair.bodyB.label === labelBoomParticle) {
+
+        boomParticles = boomParticles.filter(particle => {
+          if (particle.body.id === pair.bodyB.id) {
+            particle.removeFromWorld()
+          } else {
+            return particle;
+          }
+        })
+
+        for (let i = 0; i < 10; i++) {
+          const angle = random(TWO_PI); // 0 to 2π radians
+          const speed = random(3, 6);   // Random speed
+          const velocity = {
+            x: cos(angle) * speed,
+            y: sin(angle) * speed
+          };
+
+          const bodyOption = {
+            friction: 0,
+            frictionAir: 0.01,
+            restitution: 0.9,
+            label: "subParticle",
+            collisionFilter: {
+              category: boomParticleCategory
+            }
+          };
+
+          const particle = new CollideParticle({
+            x: pair.bodyB.position.x,
+            y: pair.bodyB.position.y,
+            r: 3,
+            bodyOption
+          });
+
+          // Apply velocity to simulate explosion
+          Body.setVelocity(particle.body, velocity);
+
+          collideParticles.push(particle);
+        }
+
+      }
+    }
+  });
+
   Events.on(engine, 'collisionActive', function (event) {
     var pairs = event.pairs;
 
-    // change object colours to show those starting a collision
-
-    // console.log(pairs);
-    
     for (var i = 0; i < pairs.length; i++) {
       var pair = pairs[i];
       if (pair.bodyA.label === labelFinalWall && pair.bodyB.label === labelPlayer) {
@@ -102,38 +162,22 @@ function setup() {
           }
         }
       }
-      if (pair.bodyA.label === labelWall && pair.bodyB.label === labelBoomParticle) {
-        
-        boomParticles = boomParticles.filter(particle => {
-          if(particle.body.id === pair.bodyB.id){
-            particle.removeFromWorld()
-          }else{
-            return particle;
-          }
-        })
-
-        for (let i = 0; i < 5; i++) {
-          const particle = new CollideParticle({ x: pair.bodyB.position.x, y: pair.bodyB.position.y, r: pair.bodyB.circleRadius});
-          var forceMagnitude = (0.03 * particle.body.mass) + Math.random() * 0.03;
-
-          // apply the force over a single update
-          Body.applyForce(particle.body, particle.body.position, { 
-              x: (forceMagnitude + Math.random() * forceMagnitude) * random([1, -1]), 
-              y: -forceMagnitude + Math.random() * -forceMagnitude
-          });
-          Body.setVelocity(particle.body, { x: Math.random() *  random(-5, 5), y: Math.random() * random(-5, 5)});
-          collideParticles.push(particle);
-        }
-        
-      }
     }
   });
+
+
+
+
 }
 
 function draw() {
-  // console.log(rect1);
+  console.log(grounds);
   
-  background("#fffbe8");
+  for (let x = 0; x < width; x += pattern.width) {
+    for (let y = 0; y < height; y += pattern.height) {
+      image(pattern, x, y);
+    }
+  }
 
   for (let i = 0; i < grounds.length; i++) {
     grounds[i].show();
@@ -148,9 +192,10 @@ function draw() {
   for (let i = 0; i < collideParticles.length; i++) {
     collideParticles[i].update();
     // console.log(collideParticles);
-    
+
   }
 
+  updateCamera(); // 👈 call the camera update here
 }
 
 //custom functions
@@ -207,8 +252,14 @@ class CreateBody {
       rotate(angle);
       imageMode(CENTER);
       image(playerImg, 0, 0, this.w, this.h);
-    }
-    else if (this.r === 0) {
+    }else if (this.body.label === labelFlagObstacle) {
+      fill("transparent");
+      strokeWeight(0);
+      stroke("transparent");
+      rotate(angle);
+      imageMode(CENTER);
+      image(flagImg, 0, 0, this.w, this.h);
+    }else if (this.r === 0) {
       rotate(angle);
       rectMode(CENTER);
       rect(0, 0, this.w, this.h);
@@ -221,55 +272,55 @@ class CreateBody {
 
 }
 
-class BoomParticle extends CreateBody{
-  constructor({ x, y, r , w, h , bodyOption }){
-    super({ x, y, r , w, h , bodyOption })
+class BoomParticle extends CreateBody {
+  constructor({ x, y, r, w, h, bodyOption }) {
+    super({ x, y, r, w, h, bodyOption })
 
     this.history = [];
   }
-  showBooParticle(){
+  showBooParticle() {
     this.show();
 
     this.history.push(createVector(this.body.position.x, this.body.position.y))
 
     for (let i = 0; i < this.history.length; i++) {
-      
+
       fill(this.body.render.fillStyle);
-      circle(this.history[i].x, this.history[i].y, (this.r * (i * 0.2) ) * 2);
+      circle(this.history[i].x, this.history[i].y, (this.r * (i * 0.2)) * 2);
     }
 
-    if(this.history.length > 5){
+    if (this.history.length > 5) {
       this.history.splice(0, 1);
-      
-      
+
+
     }
   }
 }
 
-class CollideParticle extends CreateBody{
-  constructor({ x, y, r , w, h , bodyOption }){
-    super({ x, y, r , w, h , bodyOption });
+class CollideParticle extends CreateBody {
+  constructor({ x, y, r, w, h, bodyOption }) {
+    super({ x, y, r, w, h, bodyOption });
     this.scale = 1;
   }
-  update(){
+  update() {
     // console.log(this.body);
-    
-    
+
+
     this.show();
 
     this.scale -= 0.001;
-    
-    // Matter.Body.scale(this.body, this.scale, this.scale, {x : this.body.position.x, y : this.body.position.y});
+
+    Matter.Body.scale(this.body, this.scale, this.scale, { x: this.body.position.x, y: this.body.position.y });
 
     // this.body.circleRadius -= 0.1;
-    if(this.body.circleRadius < 0.9){
+    if (this.body.circleRadius < 0.9) {
       this.removeFromWorld();
       collideParticles = collideParticles.filter(particle => {
         return particle.body.id !== this.body.id
       })
-     
+
     }
-    
+
   }
 }
 
@@ -304,13 +355,13 @@ function mouseClicked() {
       strokeStyle: "#EBB978",
       lineWidth: 3,
     },
-    collisionFilter : {
+    collisionFilter: {
       category: boomParticleCategory
     }
-    
+
   };
 
-  const boomParticle = new BoomParticle({ x: bodyCurrentPos.x, y: bodyCurrentPos.y, r: 5, bodyOption : booParticleOption });
+  const boomParticle = new BoomParticle({ x: bodyCurrentPos.x, y: bodyCurrentPos.y, r: 5, bodyOption: booParticleOption });
   Body.setVelocity(boomParticle.body, { x: velocityX * -1, y: -10 * -1 });
   boomParticles.push(
     boomParticle
@@ -341,4 +392,46 @@ function startConfetti() {
 
 function preload() {
   playerImg = loadImage('../images/other/box1.png');
+  flagImg = loadImage('../images/other/flag.png');
+}
+
+function createPattern() {
+  let pg = createGraphics(50, 50); // pattern size
+
+  pg.background("#f7eed7"); // base color
+  pg.stroke("#edddb9");
+  pg.strokeWeight(12);
+  pg.line(25, 25, 10, 10); // diagonal line
+
+  return pg;
+}
+
+function updateCamera() {
+  const threshold = width / 2; // Player stays near center
+  const playerX = rect1.body.position.x;
+
+  // If player moves beyond center, start shifting the world
+  if (playerX > threshold) {
+    const offset = playerX - threshold;
+
+    // Move player back to center
+    Body.setPosition(rect1.body, { x: threshold, y: rect1.body.position.y });
+
+    // Shift all ground bodies left
+    for (let i = 0; i < grounds.length; i++) {
+      const b = grounds[i].body;
+      Body.setPosition(b, { x: b.position.x - offset, y: b.position.y });
+    }
+
+    // Optional: move other entities like boomParticles or collideParticles
+    boomParticles.forEach(p => {
+      const b = p.body;
+      Body.setPosition(b, { x: b.position.x - offset, y: b.position.y });
+    });
+
+    collideParticles.forEach(p => {
+      const b = p.body;
+      Body.setPosition(b, { x: b.position.x - offset, y: b.position.y });
+    });
+  }
 }
