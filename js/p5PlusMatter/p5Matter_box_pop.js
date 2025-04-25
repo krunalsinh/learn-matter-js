@@ -10,9 +10,7 @@ var Engine = Matter.Engine,
   Mouse = Matter.Mouse,
   Events = Matter.Events;
 
-var world,
-  engine,
-  grounds = [], rect1, mConstraint, reached = false, playerImg, boomParticles = [], collideParticles = [], pattern, flagImg;
+var world, engine, grounds = [], targetWalls = [], rect1, mConstraint, reached = false, playerImg, boomParticles = [], collideParticles = [], pattern, flagImg;
 const labelWall = "wall", labelFinalWall = "finalWall", labelPlayer = "Player1", labelBoomParticle = "boomParticle", labelFlagObstacle = "flagObstacle";
 const wallsCategory = 0x0001, boomParticleCategory = 0x0002, flagObstacleCategory = 0x0003, playerCategory = 0x0004;
 
@@ -63,16 +61,19 @@ function setup() {
     new CreateBody({ x: width / 2, y: height, w: width, h: 60, bodyOption: groundOptions }),
     new CreateBody({ x: 300, y: 350, w: 300, h: 30, bodyOption: groundOptions }),
     new CreateBody({ x: 750, y: 580, w: 300, h: 150, bodyOption: groundOptions }),
-    new CreateBody({ x: 1200, y: 200, w: 300, h: 30, bodyOption: finalBoxOptions }),
     new CreateBody({ x: 1200, y: 135, w: 100, h: 100, bodyOption: flagObstacleOption }),
     new CreateBody({ x: 1500, y: 400, w: 100, h: 100, bodyOption: groundOptions }),
     new CreateBody({ x: 1800, y: 500, w: 100, h: 100, bodyOption: groundOptions }),
     new CreateBody({ x: 2000, y: 700, w: 100, h: 100, bodyOption: groundOptions }),
     new CreateBody({ x: 2200, y: 0, w: 30, h: 1200, bodyOption: groundOptions }),
-    new CreateBody({ x: 2500, y: 200, w: 300, h: 30, bodyOption: finalBoxOptions }),
     new CreateBody({ x: 2500, y: 135, w: 100, h: 100, bodyOption: flagObstacleOption }),
-
+    
   ];
+  
+  targetWalls = [
+    new TargetWall({ x: 2500, y: 200, w: 300, h: 30, bodyOption: finalBoxOptions }),
+    new TargetWall({ x: 1200, y: 200, w: 300, h: 30, bodyOption: finalBoxOptions }),
+  ]
 
   const playerOptions = {
     density: 1,
@@ -99,7 +100,7 @@ function setup() {
   mConstraint = MouseConstraint.create(engine, options)
   Composite.add(world, mConstraint);
 
-  console.log(mConstraint);
+  // console.log(mConstraint);
 
   //set pixel ratio
   canvasMouse.pixelRatio = pixelDensity();
@@ -163,7 +164,15 @@ function setup() {
       if (pair.bodyA.label === labelFinalWall && pair.bodyB.label === labelPlayer) {
         if (pair.bodyB.velocity.x === 0 && pair.bodyB.velocity.y === 0) {
           pair.bodyA.render.fillStyle = 'green';
-          if (!reached) {
+
+          for (let i = 0; i < targetWalls.length; i++) {
+            if(targetWalls[i].body.id === pair.bodyA.id){
+              targetWalls[i].checked = true;
+            }
+          }
+
+          const isCheckedEveryWall = targetWalls.every(wall => wall.checked === true)
+          if (isCheckedEveryWall && !reached) {
             startConfetti()
             reached = true;
           }
@@ -178,7 +187,7 @@ function setup() {
 }
 
 function draw() {
-  console.log(grounds);
+  // console.log(grounds);
   
   for (let x = 0; x < width; x += pattern.width) {
     for (let y = 0; y < height; y += pattern.height) {
@@ -188,6 +197,10 @@ function draw() {
 
   for (let i = 0; i < grounds.length; i++) {
     grounds[i].show();
+  }
+
+  for (let i = 0; i < targetWalls.length; i++) {
+    targetWalls[i].show();
   }
 
   rect1.show();
@@ -279,6 +292,15 @@ class CreateBody {
 
 }
 
+class TargetWall extends CreateBody {
+  constructor({ x, y, r, w, h, bodyOption }) {
+    super({ x, y, r, w, h, bodyOption })
+
+    this.checked = false;
+  }
+
+}
+
 class BoomParticle extends CreateBody {
   constructor({ x, y, r, w, h, bodyOption }) {
     super({ x, y, r, w, h, bodyOption })
@@ -335,7 +357,7 @@ function mouseClicked() {
   const distX = rect1.body.position.x - mouseX, maxVelocity = 5, incrAngleVelocity = 0.08;
   const currentVelocity = rect1.body.angularVelocity;
   const bodyCurrentPos = rect1.body.position;
-  console.log(bodyCurrentPos);
+  // console.log(bodyCurrentPos);
 
 
 
@@ -373,6 +395,9 @@ function mouseClicked() {
   boomParticles.push(
     boomParticle
   )
+  console.log(targetWalls);
+  
+  
 }
 
 function startConfetti() {
@@ -427,6 +452,11 @@ function updateCamera() {
     // Shift all ground bodies left
     for (let i = 0; i < grounds.length; i++) {
       const b = grounds[i].body;
+      Body.setPosition(b, { x: b.position.x - offset, y: b.position.y });
+    }
+
+    for (let i = 0; i < targetWalls.length; i++) {
+      const b = targetWalls[i].body;
       Body.setPosition(b, { x: b.position.x - offset, y: b.position.y });
     }
 
