@@ -5,31 +5,29 @@ const {
 } = Matter;
 
 let engine, world, grounds = [], targetWalls = [], mConstraint;
-let rect1, playerImg, flagImg, pattern, flagAnimated;
+let rect1, playerImg, flagImg, pattern;
 let boomParticles = [], collideParticles = [];
 let reached = false;
-let gameState = "start"; // "start", "playing", "gameover"
 
 const labels = {
   wall: "wall",
   finalWall: "finalWall",
   player: "Player1",
   boomParticle: "boomParticle",
-  flagObstacle: "flagObstacle",
-  subParticle: "subParticle"
+  flagObstacle: "flagObstacle"
 };
 
 const categories = {
   walls: 0x0001,
   boom: 0x0002,
   flag: 0x0003,
-  player: 0x0004,
-  subParticle: 0x0005
+  player: 0x0004
 };
 
 
 //p5 functions
 function setup() {
+  preload();
   var canvas = createCanvas(innerWidth, innerHeight);
   pattern = createPattern();
 
@@ -50,14 +48,9 @@ function draw() {
   targetWalls.forEach(w => w.show());
   rect1.show();
   boomParticles.forEach(p => p.showBooParticle());
-  collideParticles.forEach( (p,i) => {
-    if(i === 0){
-      console.log(p.r);
-    }   
-    
-    p.update()
-});
+  collideParticles.forEach(p => p.update());
   updateCamera();
+  console.log(playerImg);
   
 }
 
@@ -94,7 +87,7 @@ function handleBoomCollision(event) {
           friction: 0,
           frictionAir: 0.01,
           restitution: 0.9,
-          label: labels.subParticle,  
+          label: "subParticle",
           collisionFilter: { category: categories.boom }
         };
 
@@ -166,6 +159,7 @@ function initGroundsAndWalls() {
       mask: categories.walls
     }
   };
+
 
   const wallOptions = { ...staticOptions, label: labels.wall };
   const finalOptions = { ...staticOptions, label: labels.finalWall };
@@ -242,7 +236,6 @@ function createPattern() {
 function preload() {
   playerImg = loadImage('../../../common/images/other/box1.png');
   flagImg = loadImage('../../../common/images/other/flag.png');
-  flagAnimated = loadImage('../../../common/images/other/flag-animated.gif');
 }
 
 
@@ -262,12 +255,13 @@ function updateCamera() {
 
 
 class GameObject {
-  constructor({ x, y, r = 0, w = 0, h = 0, bodyOption }) {
+  constructor({ x, y, r = 0, w = 0, h = 0, bodyOption, label = "" }) {
     this.x = x;
     this.y = y;
     this.w = w;
     this.h = h;
     this.r = r;
+    this.label = label;
 
     // Create a unique color only if render styles are not predefined
     if (!bodyOption?.render) {
@@ -300,9 +294,9 @@ class GameObject {
     rotate(angle);
     imageMode(CENTER);
 
-    if (this.body.label === labels.player) {
+    if (this.label === labels.player) {
       image(playerImg, 0, 0, this.w, this.h);
-    } else if (this.body.label === labels.flagObstacle) {
+    } else if (this.label === labels.flagObstacle) {
       noFill();
       noStroke();
       image(flagImg, 0, 0, this.w, this.h);
@@ -311,8 +305,7 @@ class GameObject {
       stroke(strokeStyle);
       strokeWeight(lineWidth);
       rectMode(CENTER);
-      
-      this.r === 0 ? rect(0, 0, this.w, this.h) : circle(0, 0, this.body.circleRadius * 2);
+      this.r === 0 ? rect(0, 0, this.w, this.h) : circle(0, 0, this.r * 2);
     }
 
     pop();
