@@ -4,8 +4,8 @@ const {
   MouseConstraint, Mouse, Events
 } = Matter;
 
-let engine, world, grounds = [], targetWalls = [], mConstraint;
-let rect1, playerImg, flagImg, pattern, flagAnimated;
+let engine, world, grounds = [], flags = [], targetWalls = [], mConstraint;
+let player1, playerImg, flagImg, pattern, flagAnimated;
 let boomParticles = [], collideParticles = [];
 let reached = false;
 let gameState = "start"; // "start", "playing", "gameover"
@@ -48,25 +48,99 @@ function draw() {
   drawBackgroundPattern();
   grounds.forEach(g => g.show());
   targetWalls.forEach(w => w.show());
-  rect1.show();
+  flags.forEach(f => f.show());
+  player1.show();
   boomParticles.forEach(p => p.showBooParticle());
-  collideParticles.forEach( (p,i) => {
-    if(i === 0){
+  collideParticles.forEach((p, i) => {
+    if (i === 0) {
       console.log(p.r);
-    }   
-    
+    }
     p.update()
-});
+  });
   updateCamera();
-  
+
 }
 
-function drawBackgroundPattern() {
-  for (let x = 0; x < width; x += pattern.width) {
-    for (let y = 0; y < height; y += pattern.height) {
-      image(pattern, x, y);
+function preload() {
+  playerImg = loadImage('../../../common/images/other/box1.png');
+  flagImg = loadImage('../../../common/images/other/flag.png');
+  flagAnimated = loadImage('../../../common/images/other/flag-animated.gif');
+}
+
+//custom functions
+function initCollisions() {
+  Events.on(engine, 'collisionStart', handleBoomCollision);
+  Events.on(engine, 'collisionActive', handleFinalWallCollision);
+}
+
+function initMouse() {
+  const canvasMouse = Mouse.create(canvas.elt);
+  canvasMouse.pixelRatio = pixelDensity();
+  mConstraint = MouseConstraint.create(engine, { mouse: canvasMouse });
+  Composite.add(world, mConstraint);
+}
+
+function initPlayer() {
+  const playerOptions = {
+    density: 1,
+    friction: 0.8,
+    restitution: 0.5,
+    label: labels.player,
+    collisionFilter: { category: categories.player, mask: categories.walls }
+  };
+
+  player1 = new Player({ x: width / 2, y: 50, w: 50, h: 50, bodyOption: playerOptions });
+}
+
+function initGroundsAndWalls() {
+
+  const staticOptions = {
+    isStatic: true,
+    friction: 0.8,
+    restitution: 0.5,
+    label: labels.wall,
+    render: { fillStyle: "#abdeed", strokeStyle: "#01368a", lineWidth: 3, },
+    collisionFilter: { category: categories.walls }
+  };
+
+  const flagOptions = {
+    ...staticOptions,
+    label: labels.flagObstacle,
+    collisionFilter: {
+      category: categories.flag,
+      mask: categories.walls
     }
-  }
+  };
+
+  const wallOptions = { ...staticOptions, label: labels.wall };
+
+  const finalOptions = { ...staticOptions, label: labels.finalWall };
+
+  const bodyData = [
+    { x: width / 2, y: height, w: width, h: 60, opt: wallOptions },
+    { x: 300, y: 350, w: 300, h: 30, opt: wallOptions },
+    { x: 750, y: 580, w: 300, h: 150, opt: wallOptions },
+    { x: 1500, y: 400, w: 100, h: 100, opt: wallOptions },
+    { x: 1800, y: 500, w: 100, h: 100, opt: wallOptions },
+    { x: 2000, y: 700, w: 100, h: 100, opt: wallOptions },
+    { x: 2200, y: 0, w: 30, h: 1200, opt: wallOptions },
+  ];
+  
+  grounds = bodyData.map(d => new Wall({ x: d.x, y: d.y, w: d.w, h: d.h, bodyOption: d.opt }));
+  
+  const flagData = [
+    { x: 1200, y: 135, w: 100, h: 100, opt: flagOptions },
+    { x: 2500, y: 135, w: 100, h: 100, opt: flagOptions }
+  ];
+
+  flags = flagData.map(d => new Flag({ x: d.x, y: d.y, w: d.w, h: d.h, bodyOption: d.opt }));
+
+  const targetData = [
+    { x: 2500, y: 200, w: 300, h: 30, opt: finalOptions },
+    { x: 1200, y: 200, w: 300, h: 30, opt: finalOptions }
+  ];
+
+  targetWalls = targetData.map(d => new TargetWall({ x: d.x, y: d.y, w: d.w, h: d.h, bodyOption: d.opt }));
 }
 
 function handleBoomCollision(event) {
@@ -94,7 +168,7 @@ function handleBoomCollision(event) {
           friction: 0,
           frictionAir: 0.01,
           restitution: 0.9,
-          label: labels.subParticle,  
+          label: labels.subParticle,
           collisionFilter: { category: categories.boom }
         };
 
@@ -125,85 +199,22 @@ function handleFinalWallCollision(event) {
   }
 }
 
-function initCollisions() {
-  Events.on(engine, 'collisionStart', handleBoomCollision);
-  Events.on(engine, 'collisionActive', handleFinalWallCollision);
-}
-
-function initMouse() {
-  const canvasMouse = Mouse.create(canvas.elt);
-  canvasMouse.pixelRatio = pixelDensity();
-  mConstraint = MouseConstraint.create(engine, { mouse: canvasMouse });
-  Composite.add(world, mConstraint);
-}
-
-function initPlayer() {
-  const playerOptions = {
-    density: 1,
-    friction: 0.8,
-    restitution: 0.5,
-    label: labels.player,
-    collisionFilter: { category: categories.player, mask: categories.walls }
-  };
-
-  rect1 = new GameObject({ x: width / 2, y: 50, w: 50, h: 50, bodyOption: playerOptions });
-}
-function initGroundsAndWalls() {
-
-  const staticOptions = {
-    isStatic: true,
-    friction: 0.8,
-    restitution: 0.5,
-    label: labels.wall,
-    render: { fillStyle: "#abdeed", strokeStyle: "#01368a", lineWidth: 3, },
-    collisionFilter: { category: categories.walls }
-  };
-  const flagOptions = {
-    ...staticOptions,
-    label: labels.flagObstacle,
-    collisionFilter: {
-      category: categories.flag,
-      mask: categories.walls
+function drawBackgroundPattern() {
+  for (let x = 0; x < width; x += pattern.width) {
+    for (let y = 0; y < height; y += pattern.height) {
+      image(pattern, x, y);
     }
-  };
-
-  const wallOptions = { ...staticOptions, label: labels.wall };
-  const finalOptions = { ...staticOptions, label: labels.finalWall };
-
-  const bodyData = [
-    { x: width / 2, y: height, w: width, h: 60, opt: wallOptions },
-    { x: 300, y: 350, w: 300, h: 30, opt: wallOptions },
-    { x: 750, y: 580, w: 300, h: 150, opt: wallOptions },
-    { x: 1200, y: 135, w: 100, h: 100, opt: flagOptions },
-    { x: 1500, y: 400, w: 100, h: 100, opt: wallOptions },
-    { x: 1800, y: 500, w: 100, h: 100, opt: wallOptions },
-    { x: 2000, y: 700, w: 100, h: 100, opt: wallOptions },
-    { x: 2200, y: 0, w: 30, h: 1200, opt: wallOptions },
-    { x: 2500, y: 135, w: 100, h: 100, opt: flagOptions }
-  ];
-
-  grounds = bodyData.map(d => new GameObject({ x: d.x, y: d.y, w: d.w, h: d.h, bodyOption: d.opt }));
-
-  const targetData = [
-    { x: 2500, y: 200, w: 300, h: 30, opt: finalOptions },
-    { x: 1200, y: 200, w: 300, h: 30, opt: finalOptions }
-  ];
-
-  targetWalls = targetData.map(d => new TargetWall({ x: d.x, y: d.y, w: d.w, h: d.h, bodyOption: d.opt }));
+  }
 }
-
-
-
-//custom functions
 
 function mouseClicked() {
-  const { x: px, y: py } = rect1.body.position;
+  const { x: px, y: py } = player1.body.position;
   const distX = px - mouseX;
   const velocityX = distX < 0 ? -5 : 5;
-  const angularVelocity = rect1.body.angularVelocity + (distX < 0 ? -0.08 : 0.08);
+  const angularVelocity = player1.body.angularVelocity + (distX < 0 ? -0.08 : 0.08);
 
-  Body.setVelocity(rect1.body, { x: velocityX, y: -10 });
-  Body.setAngularVelocity(rect1.body, angularVelocity);
+  Body.setVelocity(player1.body, { x: velocityX, y: -10 });
+  Body.setAngularVelocity(player1.body, angularVelocity);
 
   const booOption = {
     label: labels.boomParticle,
@@ -239,29 +250,19 @@ function createPattern() {
   pg.line(25, 25, 10, 10);
   return pg;
 }
-function preload() {
-  playerImg = loadImage('../../../common/images/other/box1.png');
-  flagImg = loadImage('../../../common/images/other/flag.png');
-  flagAnimated = loadImage('../../../common/images/other/flag-animated.gif');
-}
-
-
 
 function updateCamera() {
   const threshold = width / 2;
-  const playerX = rect1.body.position.x;
+  const playerX = player1.body.position.x;
   if (playerX > threshold) {
     const offset = playerX - threshold;
-    Body.setPosition(rect1.body, { x: threshold, y: rect1.body.position.y });
-    grounds.forEach(b => Body.setPosition(b.body, { x: b.body.position.x - offset, y: b.body.position.y }));
-    targetWalls.forEach(b => Body.setPosition(b.body, { x: b.body.position.x - offset, y: b.body.position.y }));
-    boomParticles.forEach(p => Body.setPosition(p.body, { x: p.body.position.x - offset, y: p.body.position.y }));
-    collideParticles.forEach(p => Body.setPosition(p.body, { x: p.body.position.x - offset, y: p.body.position.y }));
+    Body.setPosition(player1.body, { x: threshold, y: player1.body.position.y });
+    [...grounds, ...flags, ...targetWalls, ...boomParticles, ...collideParticles].forEach(b => Body.setPosition(b.body, { x: b.body.position.x - offset, y: b.body.position.y }));
   }
 }
 
-
-class GameObject {
+//custom classes
+class BaseBody {
   constructor({ x, y, r = 0, w = 0, h = 0, bodyOption }) {
     this.x = x;
     this.y = y;
@@ -290,48 +291,123 @@ class GameObject {
     Composite.remove(engine.world, this.body);
   }
 
+  setBodyProps() {}
+
   show() {
-    const pos = this.body.position;
-    const angle = this.body.angle;
-    const { fillStyle, strokeStyle, lineWidth } = this.body.render;
+    const { position, angle } = this.body;
 
     push();
-    translate(pos.x, pos.y);
+    translate(position.x, position.y);
     rotate(angle);
-    imageMode(CENTER);
 
-    if (this.body.label === labels.player) {
-      image(playerImg, 0, 0, this.w, this.h);
-    } else if (this.body.label === labels.flagObstacle) {
-      noFill();
-      noStroke();
-      image(flagImg, 0, 0, this.w, this.h);
-    } else {
-      fill(fillStyle);
-      stroke(strokeStyle);
-      strokeWeight(lineWidth);
-      rectMode(CENTER);
-      
-      this.r === 0 ? rect(0, 0, this.w, this.h) : circle(0, 0, this.body.circleRadius * 2);
-    }
+    this.setBodyProps();
 
     pop();
   }
 }
 
-class TargetWall extends GameObject {
+class Box extends BaseBody {
+  constructor(config) {
+    super({ ...config });
+  }
+  setBodyProps() {
+    const { fillStyle, strokeStyle, lineWidth } = this.body.render;
+
+    fill(fillStyle);
+    stroke(strokeStyle);
+    strokeWeight(lineWidth);
+    rectMode(CENTER);
+
+    rect(0, 0, this.w, this.h);
+  }
+}
+
+class Circle extends BaseBody {
+  constructor(config) {
+    super({ ...config, label: labels.finalWall });
+  }
+  setBodyProps() {
+    const { fillStyle, strokeStyle, lineWidth } = this.body.render;
+
+    fill(fillStyle);
+    stroke(strokeStyle);
+    strokeWeight(lineWidth);
+    rectMode(CENTER);
+
+    rect(0, 0, this.w, this.h);
+  }
+}
+
+class Player extends BaseBody {
+  constructor(config) {
+    super({ ...config });
+  }
+  setBodyProps() {
+    imageMode(CENTER);
+    image(playerImg, 0, 0, this.w, this.h);
+  }
+}
+
+class Wall extends BaseBody {
+  constructor(config) {
+    super({ ...config, label: labels.finalWall });
+  }
+  setBodyProps() {
+    const { fillStyle, strokeStyle, lineWidth } = this.body.render;
+
+    fill(fillStyle);
+    stroke(strokeStyle);
+    strokeWeight(lineWidth);
+    rectMode(CENTER);
+
+    rect(0, 0, this.w, this.h);
+  }
+}
+
+class Flag extends BaseBody {
+  constructor(config) {
+    super({ ...config, label: labels.flagObstacle });
+  }
+  setBodyProps() {
+    imageMode(CENTER);
+    noFill();
+    noStroke();
+    image(flagImg, 0, 0, this.w, this.h);
+  }
+}
+
+class TargetWall extends BaseBody {
   constructor(config) {
     super({ ...config, label: labels.finalWall });
     this.checked = false;
   }
+  setBodyProps() {
+    const { fillStyle, strokeStyle, lineWidth } = this.body.render;
+
+    fill(fillStyle);
+    stroke(strokeStyle);
+    strokeWeight(lineWidth);
+    rectMode(CENTER);
+
+    rect(0, 0, this.w, this.h);
+  }
 }
 
-class BoomParticle extends GameObject {
+class BoomParticle extends BaseBody {
   constructor(config) {
     super({ ...config, label: labels.boomParticle });
     this.history = [];
   }
+  setBodyProps() {
+    const { fillStyle, strokeStyle, lineWidth } = this.body.render;
 
+    fill(fillStyle);
+    stroke(strokeStyle);
+    strokeWeight(lineWidth);
+    rectMode(CENTER);
+
+    circle(0, 0, this.r * 2);
+  }
   showBooParticle() {
     this.show();
     const pos = this.body.position;
@@ -346,10 +422,21 @@ class BoomParticle extends GameObject {
   }
 }
 
-class CollideParticle extends GameObject {
+class CollideParticle extends BaseBody {
   constructor(config) {
     super({ ...config, label: "subParticle" });
     this.scale = 1;
+  }
+
+  setBodyProps() {
+    const { fillStyle, strokeStyle, lineWidth } = this.body.render;
+
+    fill(fillStyle);
+    stroke(strokeStyle);
+    strokeWeight(lineWidth);
+    rectMode(CENTER);
+
+    circle(0, 0, this.body.circleRadius * 2 );
   }
 
   update() {
