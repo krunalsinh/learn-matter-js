@@ -5,7 +5,7 @@ const {
 } = Matter;
 
 let engine, world, grounds = [], flags = [], targetWalls = [], mConstraint;
-let player1, playerImg, flagImg, pattern, flagAnimated;
+let player1, playerImg, flagImg, wallImage, pattern, flagAnimated;
 let boomParticles = [], collideParticles = [];
 let reached = false;
 let gameState = "start"; // "start", "playing", "gameover"
@@ -65,6 +65,7 @@ function preload() {
   playerImg = loadImage('../../../common/images/other/box1.png');
   flagImg = loadImage('../../../common/images/other/flag.png');
   flagAnimated = loadImage('../../../common/images/other/flag-animated.gif');
+  wallImage = loadImage('../../../common/images/other/wall.png');
 }
 
 //custom functions
@@ -353,14 +354,15 @@ class Wall extends BaseBody {
     super({ ...config, label: labels.finalWall });
   }
   setBodyProps() {
-    const { fillStyle, strokeStyle, lineWidth } = this.body.render;
+    const tileSize = 64; // fixed tile size (you can set to 32, 64, etc.)
+      
+    
 
-    fill(fillStyle);
-    stroke(strokeStyle);
-    strokeWeight(lineWidth);
-    rectMode(CENTER);
-
-    rect(0, 0, this.w, this.h);
+    for (let x = -this.w / 2; x < this.w / 2; x += tileSize) {
+      for (let y = -this.h / 2; y < this.h / 2; y += tileSize) {
+        image(wallImage, x, y, tileSize, tileSize);
+      }
+    }
   }
 }
 
