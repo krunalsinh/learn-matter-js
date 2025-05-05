@@ -4,8 +4,8 @@ const {
   MouseConstraint, Mouse, Events
 } = Matter;
 
-let engine, world, grounds = [], flags = [], targetWalls = [], mConstraint;
-let player1, playerImg, flagImg, wallImage, pattern, flagAnimated;
+let engine, world, grounds = [], fixedWalls = [], targetWalls = [], mConstraint, tileSize = 32;
+let player1, playerImg, flagRedImg, flagGreenImg, wallImage, pattern, flagAnimated;
 let boomParticles = [], collideParticles = [];
 let reached = false;
 let gameState = "start"; // "start", "playing", "gameover"
@@ -46,9 +46,12 @@ function setup() {
 
 function draw() {
   drawBackgroundPattern();
-  grounds.forEach(g => g.show());
+  grounds.forEach((g, i) => {
+    
+    g.show();
+  });
   targetWalls.forEach(w => w.show());
-  flags.forEach(f => f.show());
+  fixedWalls.forEach(w => w.show());
   player1.show();
   boomParticles.forEach(p => p.showBooParticle());
   collideParticles.forEach((p, i) => {
@@ -63,7 +66,8 @@ function draw() {
 
 function preload() {
   playerImg = loadImage('../../../common/images/other/box1.png');
-  flagImg = loadImage('../../../common/images/other/flag.png');
+  flagRedImg = loadImage('../../../common/images/other/flag-red.png');
+  flagGreenImg = loadImage('../../../common/images/other/flag-green.png');
   flagAnimated = loadImage('../../../common/images/other/flag-animated.gif');
   wallImage = loadImage('../../../common/images/other/wall.png');
 }
@@ -104,44 +108,37 @@ function initGroundsAndWalls() {
     collisionFilter: { category: categories.walls }
   };
 
-  const flagOptions = {
-    ...staticOptions,
-    label: labels.flagObstacle,
-    collisionFilter: {
-      category: categories.flag,
-      mask: categories.walls
-    }
-  };
 
   const wallOptions = { ...staticOptions, label: labels.wall };
 
   const finalOptions = { ...staticOptions, label: labels.finalWall };
 
   const bodyData = [
-    { x: width / 2, y: height, w: width, h: 60, opt: wallOptions },
-    { x: 300, y: 350, w: 300, h: 30, opt: wallOptions },
-    { x: 750, y: 580, w: 300, h: 150, opt: wallOptions },
-    { x: 1500, y: 400, w: 100, h: 100, opt: wallOptions },
-    { x: 1800, y: 500, w: 100, h: 100, opt: wallOptions },
-    { x: 2000, y: 700, w: 100, h: 100, opt: wallOptions },
-    { x: 2200, y: 0, w: 30, h: 1200, opt: wallOptions },
-  ];
-  
-  grounds = bodyData.map(d => new Wall({ x: d.x, y: d.y, w: d.w, h: d.h, bodyOption: d.opt }));
-  
-  const flagData = [
-    { x: 1200, y: 135, w: 100, h: 100, opt: flagOptions },
-    { x: 2500, y: 135, w: 100, h: 100, opt: flagOptions }
+    { x: width / 2, y: height, w: width, h: tileSize * 2, opt: wallOptions },
+    { x: 300, y: 350, w: tileSize * 8, h: tileSize * 3, opt: wallOptions },
+    { x: 750, y: 580, w: tileSize * 11, h: tileSize * 4, opt: wallOptions },
+    { x: 1500, y: 400, w: tileSize * 3, h: tileSize * 3, opt: wallOptions },
+    { x: 1800, y: 500, w: tileSize * 3, h: tileSize * 3, opt: wallOptions },
+    { x: 2000, y: 700, w: tileSize * 3, h: tileSize * 3, opt: wallOptions },
+    { x: 2200, y: 0, w: tileSize * 1, h: tileSize * 32, opt: wallOptions },
   ];
 
-  flags = flagData.map(d => new Flag({ x: d.x, y: d.y, w: d.w, h: d.h, bodyOption: d.opt }));
+  grounds = bodyData.map(d => new Wall({ x: d.x, y: d.y, w: d.w, h: d.h, bodyOption: d.opt }));
+
 
   const targetData = [
-    { x: 2500, y: 200, w: 300, h: 30, opt: finalOptions },
-    { x: 1200, y: 200, w: 300, h: 30, opt: finalOptions }
+    { x: 2500, y: 200, w: tileSize * 9, h: tileSize * 1, opt: finalOptions },
+    { x: 1200, y: 200, w: tileSize * 9, h: tileSize * 1, opt: finalOptions }
   ];
 
   targetWalls = targetData.map(d => new TargetWall({ x: d.x, y: d.y, w: d.w, h: d.h, bodyOption: d.opt }));
+
+
+ const fixedWallsData = [
+    { x: 0 - tileSize / 2 + 5, y: height / 2 - 50, w: tileSize, h: height + 150, opt: wallOptions },
+    { x: width / 2 - 50, y: 0 - tileSize / 2 -50, w: width + 150, h: tileSize , opt: wallOptions },
+  ]
+  fixedWalls = fixedWallsData.map(d => new Wall({ x: d.x, y: d.y, w: d.w, h: d.h, bodyOption: d.opt }));
 }
 
 function handleBoomCollision(event) {
@@ -188,7 +185,7 @@ function handleFinalWallCollision(event) {
         pair.bodyA.render.fillStyle = 'green';
 
         targetWalls.forEach(w => {
-          if (w.body.id === pair.bodyA.id) w.checked = true;
+          if (w.body.id === pair.bodyA.id && !w.checked) w.checked = true;
         });
 
         if (targetWalls.every(w => w.checked) && !reached) {
@@ -219,7 +216,7 @@ function mouseClicked() {
 
   const booOption = {
     label: labels.boomParticle,
-    render: { fillStyle: "#EBB978", strokeStyle: "#EBB978", lineWidth: 3 },
+    render: { fillStyle: "#EBB978", strokeStyle: "#EBB978", lineWidth: 0 },
     collisionFilter: { category: categories.boom }
   };
 
@@ -258,7 +255,7 @@ function updateCamera() {
   if (playerX > threshold) {
     const offset = playerX - threshold;
     Body.setPosition(player1.body, { x: threshold, y: player1.body.position.y });
-    [...grounds, ...flags, ...targetWalls, ...boomParticles, ...collideParticles].forEach(b => Body.setPosition(b.body, { x: b.body.position.x - offset, y: b.body.position.y }));
+    [...grounds, ...targetWalls, ...boomParticles, ...collideParticles].forEach(b => Body.setPosition(b.body, { x: b.body.position.x - offset, y: b.body.position.y }));
   }
 }
 
@@ -292,7 +289,7 @@ class BaseBody {
     Composite.remove(engine.world, this.body);
   }
 
-  setBodyProps() {}
+  setBodyProps() { }
 
   show() {
     const { position, angle } = this.body;
@@ -351,48 +348,64 @@ class Player extends BaseBody {
 
 class Wall extends BaseBody {
   constructor(config) {
-    super({ ...config, label: labels.finalWall });
+
+    // Snap width and height to multiples of tileSize
+    const snappedWidth = Math.floor(config.w / tileSize) * tileSize;
+    const snappedHeight = Math.floor(config.h / tileSize) * tileSize;
+
+    super({
+      ...config,
+      w: snappedWidth,
+      h: snappedHeight,
+      bodyOption: { ...config.bodyOption }
+    });
+
+    this.tileSize = tileSize;
+
+
   }
   setBodyProps() {
-    const tileSize = 64; // fixed tile size (you can set to 32, 64, etc.)
-      
-    
+    const cols = this.w / this.tileSize;
+    const rows = this.h / this.tileSize;
 
-    for (let x = -this.w / 2; x < this.w / 2; x += tileSize) {
-      for (let y = -this.h / 2; y < this.h / 2; y += tileSize) {
-        image(wallImage, x, y, tileSize, tileSize);
+    imageMode(CORNER);
+    for (let i = 0; i < cols; i++) {
+      for (let j = 0; j < rows; j++) {
+        image(
+          wallImage,
+          -this.w / 2 + i * this.tileSize,
+          -this.h / 2 + j * this.tileSize,
+          this.tileSize,
+          this.tileSize
+        );
       }
     }
   }
+
 }
 
-class Flag extends BaseBody {
+
+class TargetWall extends Wall {
   constructor(config) {
-    super({ ...config, label: labels.flagObstacle });
+    super({ ...config });
+    this.checked = false;
+    this.flagW = tileSize * 3;
+    this.flagH = tileSize * 3;
+
   }
   setBodyProps() {
+    super.setBodyProps();
     imageMode(CENTER);
     noFill();
     noStroke();
-    image(flagImg, 0, 0, this.w, this.h);
-  }
-}
+    if (this.checked) {
+      image(flagGreenImg, 0, -this.h * 2, this.flagW, this.flagH);
+    } else {
+      image(flagRedImg, 0, -this.h * 2, this.flagW, this.flagH);
 
-class TargetWall extends BaseBody {
-  constructor(config) {
-    super({ ...config, label: labels.finalWall });
-    this.checked = false;
+    }
   }
-  setBodyProps() {
-    const { fillStyle, strokeStyle, lineWidth } = this.body.render;
 
-    fill(fillStyle);
-    stroke(strokeStyle);
-    strokeWeight(lineWidth);
-    rectMode(CENTER);
-
-    rect(0, 0, this.w, this.h);
-  }
 }
 
 class BoomParticle extends BaseBody {
@@ -400,22 +413,14 @@ class BoomParticle extends BaseBody {
     super({ ...config, label: labels.boomParticle });
     this.history = [];
   }
-  setBodyProps() {
-    const { fillStyle, strokeStyle, lineWidth } = this.body.render;
 
-    fill(fillStyle);
-    stroke(strokeStyle);
-    strokeWeight(lineWidth);
-    rectMode(CENTER);
-
-    circle(0, 0, this.r * 2);
-  }
   showBooParticle() {
     this.show();
     const pos = this.body.position;
     this.history.push(createVector(pos.x, pos.y));
 
     for (let i = 0; i < this.history.length; i++) {
+      noStroke();
       fill(this.body.render.fillStyle);
       circle(this.history[i].x, this.history[i].y, (this.r * (i * 0.2)) * 2);
     }
@@ -438,7 +443,7 @@ class CollideParticle extends BaseBody {
     strokeWeight(lineWidth);
     rectMode(CENTER);
 
-    circle(0, 0, this.body.circleRadius * 2 );
+    circle(0, 0, this.body.circleRadius * 2);
   }
 
   update() {
