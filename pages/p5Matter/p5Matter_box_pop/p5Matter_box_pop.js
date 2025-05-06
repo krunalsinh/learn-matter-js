@@ -8,7 +8,11 @@ let engine, world, grounds = [], fixedWalls = [], targetWalls = [], dividerWall,
 let player1, playerImg, flagRedImg, flagGreenImg, wallImage, pattern, flagAnimated;
 let boomParticles = [], collideParticles = [];
 let reached = false;
-let gameState = "start"; // "start", "playing", "gameover"
+let gameStartButton = document.querySelector("#startGameButton");
+let gameStartPopup = document.querySelector("#gameStartPopup");
+
+let gameRestartButton = document.querySelector("#restartGameButton");
+let gameEndPopup = document.querySelector("#gameEndPopup");
 
 const labels = {
   wall: "wall",
@@ -30,18 +34,7 @@ const categories = {
 
 //p5 functions
 function setup() {
-  var canvas = createCanvas(innerWidth, innerHeight);
-  pattern = createPattern();
-
-  engine = Engine.create();
-  world = engine.world;
-  Runner.run(Runner.create(), engine);
-
-
-  initGroundsAndWalls();
-  initPlayer();
-  initMouse();
-  initCollisions();
+  initSetup();
 }
 
 function draw() {
@@ -63,7 +56,52 @@ function preload() {
   wallImage = loadImage('../../../common/images/other/wall.png');
 }
 
+function mouseClicked() {
+  const { x: px, y: py } = player1.body.position;
+  const distX = px - mouseX;
+  const velocityX = distX < 0 ? -5 : 5;
+  const angularVelocity = player1.body.angularVelocity + (distX < 0 ? -0.08 : 0.08);
+
+  Body.setVelocity(player1.body, { x: velocityX, y: -10 });
+  Body.setAngularVelocity(player1.body, angularVelocity);
+
+  const booOption = {
+    label: labels.boomParticle,
+    render: { fillStyle: "#EBB978", strokeStyle: "#EBB978", lineWidth: 0 },
+    collisionFilter: { category: categories.boom }
+  };
+
+  const boom = new BoomParticle({ x: px, y: py, r: 5, bodyOption: booOption });
+  Body.setVelocity(boom.body, { x: -velocityX, y: 10 });
+  boomParticles.push(boom);
+
+}
+
 //custom functions
+function initSetup() {
+  createCanvas(innerWidth, innerHeight);
+  pattern = createPattern();
+  
+  engine = Engine.create();
+  world = engine.world;
+  
+  initGroundsAndWalls();
+  initPlayer();
+  initMouse();
+  initCollisions();
+  
+}
+
+function startGame() {
+  Runner.run(Runner.create(), engine);
+  loop();
+}
+
+function stopGame() {
+  noLoop();
+  Composite.clear(engine.world, false);
+}
+
 function initCollisions() {
   Events.on(engine, 'collisionStart', handleBoomCollision);
   Events.on(engine, 'collisionActive', handleFinalWallCollision);
@@ -196,27 +234,6 @@ function drawBackgroundPattern() {
   }
 }
 
-function mouseClicked() {
-  const { x: px, y: py } = player1.body.position;
-  const distX = px - mouseX;
-  const velocityX = distX < 0 ? -5 : 5;
-  const angularVelocity = player1.body.angularVelocity + (distX < 0 ? -0.08 : 0.08);
-
-  Body.setVelocity(player1.body, { x: velocityX, y: -10 });
-  Body.setAngularVelocity(player1.body, angularVelocity);
-
-  const booOption = {
-    label: labels.boomParticle,
-    render: { fillStyle: "#EBB978", strokeStyle: "#EBB978", lineWidth: 0 },
-    collisionFilter: { category: categories.boom }
-  };
-
-  const boom = new BoomParticle({ x: px, y: py, r: 5, bodyOption: booOption });
-  Body.setVelocity(boom.body, { x: -velocityX, y: 10 });
-  boomParticles.push(boom);
-
-}
-
 function startConfetti() {
   const duration = 5000;
   const end = Date.now() + duration;
@@ -253,6 +270,18 @@ function updateCamera() {
     });
   }
 }
+
+//custom events
+gameStartButton.addEventListener("click", () => {
+  gameStartPopup.classList.remove("show");
+  startGame();
+});
+
+gameRestartButton.addEventListener("click", () => {
+  gameEndPopup.classList.remove("show");
+  initSetup();
+  startGame();  
+});
 
 //custom classes
 class BaseBody {
@@ -297,6 +326,14 @@ class BaseBody {
 
     pop();
   }
+
+  checkOutOfWorld() {
+    const { y } = this.body.position;
+    if (  y > height + 150 + this.h) {
+      return true;
+    }
+    return false;
+  }
 }
 
 class Box extends BaseBody {
@@ -335,9 +372,22 @@ class Player extends BaseBody {
   constructor(config) {
     super({ ...config });
   }
+
   setBodyProps() {
     imageMode(CENTER);
     image(playerImg, 0, 0, this.w, this.h);
+  }
+
+  show() {
+    super.show();
+    this.update();
+  }
+
+  update() {
+    if(this.checkOutOfWorld()){
+      stopGame();
+      gameEndPopup.classList.add("show");
+    } 
   }
 }
 
