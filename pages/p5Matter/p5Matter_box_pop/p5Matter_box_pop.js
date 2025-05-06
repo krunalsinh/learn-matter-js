@@ -286,6 +286,14 @@ function updateCamera() {
   });
 });
 
+["click", "touchend"].forEach(event => {
+  gameRestartButton.addEventListener(event, (e) => {
+    gameEndPopup.classList.remove("show");
+    initSetup();
+    startGame();  
+  });
+});
+
 //custom classes
 class BaseBody {
   constructor({ x, y, r = 0, w = 0, h = 0, bodyOption }) {
