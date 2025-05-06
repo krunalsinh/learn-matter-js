@@ -57,6 +57,15 @@ function preload() {
 }
 
 function mouseClicked() {
+  boxPopAction();
+}
+
+function touchEnded() {
+  boxPopAction();
+}
+
+//custom functions
+function boxPopAction() {
   const { x: px, y: py } = player1.body.position;
   const distX = px - mouseX;
   const velocityX = distX < 0 ? -5 : 5;
@@ -74,10 +83,8 @@ function mouseClicked() {
   const boom = new BoomParticle({ x: px, y: py, r: 5, bodyOption: booOption });
   Body.setVelocity(boom.body, { x: -velocityX, y: 10 });
   boomParticles.push(boom);
-
 }
 
-//custom functions
 function initSetup() {
   createCanvas(innerWidth, innerHeight);
   pattern = createPattern();
@@ -130,8 +137,8 @@ function initGroundsAndWalls() {
 
   const staticOptions = {
     isStatic: true,
-    friction: 0.8,
-    restitution: 0.5,
+    friction: 1,
+    restitution: 1,
     label: labels.wall,
     render: { fillStyle: "#abdeed", strokeStyle: "#01368a", lineWidth: 3, },
     collisionFilter: { category: categories.walls }
@@ -272,15 +279,11 @@ function updateCamera() {
 }
 
 //custom events
-gameStartButton.addEventListener("click", () => {
-  gameStartPopup.classList.remove("show");
-  startGame();
-});
-
-gameRestartButton.addEventListener("click", () => {
-  gameEndPopup.classList.remove("show");
-  initSetup();
-  startGame();  
+["click", "touchend"].forEach(event => {
+  gameStartButton.addEventListener(event, (e) => {
+    gameStartPopup.classList.remove("show");
+    startGame();
+  });
 });
 
 //custom classes
