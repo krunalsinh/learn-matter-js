@@ -4,7 +4,7 @@ const {
   MouseConstraint, Mouse, Events
 } = Matter;
 
-let engine, world, grounds = [], fixedWalls = [], targetWalls = [], mConstraint, tileSize = 32;
+let engine, world, grounds = [], fixedWalls = [], targetWalls = [], dividerWall, mConstraint, tileSize = 32;
 let player1, playerImg, flagRedImg, flagGreenImg, wallImage, pattern, flagAnimated;
 let boomParticles = [], collideParticles = [];
 let reached = false;
@@ -46,20 +46,11 @@ function setup() {
 
 function draw() {
   drawBackgroundPattern();
-  grounds.forEach((g, i) => {
-    
-    g.show();
-  });
-  targetWalls.forEach(w => w.show());
-  fixedWalls.forEach(w => w.show());
-  player1.show();
+  
+  [...grounds, ...targetWalls, ...fixedWalls, dividerWall, player1].forEach(w => w.show());
+
   boomParticles.forEach(p => p.showBooParticle());
-  collideParticles.forEach((p, i) => {
-    if (i === 0) {
-      console.log(p.r);
-    }
-    p.update()
-  });
+  collideParticles.forEach(p => p.update());
   updateCamera();
 
 }
@@ -120,19 +111,20 @@ function initGroundsAndWalls() {
     { x: 1500, y: 400, w: tileSize * 3, h: tileSize * 3, opt: wallOptions },
     { x: 1800, y: 500, w: tileSize * 3, h: tileSize * 3, opt: wallOptions },
     { x: 2000, y: 700, w: tileSize * 3, h: tileSize * 3, opt: wallOptions },
-    { x: 2200, y: 0, w: tileSize * 1, h: tileSize * 32, opt: wallOptions },
+    
   ];
 
   grounds = bodyData.map(d => new Wall({ x: d.x, y: d.y, w: d.w, h: d.h, bodyOption: d.opt }));
 
 
   const targetData = [
+    { x: 1200, y: 200, w: tileSize * 9, h: tileSize * 1, opt: finalOptions },
     { x: 2500, y: 200, w: tileSize * 9, h: tileSize * 1, opt: finalOptions },
-    { x: 1200, y: 200, w: tileSize * 9, h: tileSize * 1, opt: finalOptions }
   ];
 
   targetWalls = targetData.map(d => new TargetWall({ x: d.x, y: d.y, w: d.w, h: d.h, bodyOption: d.opt }));
 
+  dividerWall = new DividerWall({ x: 2200, y: height / 2 - 50, w: tileSize * 1, h: height + 200, bodyOption: wallOptions });
 
  const fixedWallsData = [
     { x: 0 - tileSize / 2 + 5, y: height / 2 - 50, w: tileSize, h: height + 150, opt: wallOptions },
@@ -182,7 +174,6 @@ function handleFinalWallCollision(event) {
   for (const pair of event.pairs) {
     if (pair.bodyA.label === labels.finalWall && pair.bodyB.label === labels.player) {
       if (pair.bodyB.velocity.x === 0 && pair.bodyB.velocity.y === 0) {
-        pair.bodyA.render.fillStyle = 'green';
 
         targetWalls.forEach(w => {
           if (w.body.id === pair.bodyA.id && !w.checked) w.checked = true;
@@ -255,7 +246,11 @@ function updateCamera() {
   if (playerX > threshold) {
     const offset = playerX - threshold;
     Body.setPosition(player1.body, { x: threshold, y: player1.body.position.y });
-    [...grounds, ...targetWalls, ...boomParticles, ...collideParticles].forEach(b => Body.setPosition(b.body, { x: b.body.position.x - offset, y: b.body.position.y }));
+    [...grounds, ...targetWalls, dividerWall, ...boomParticles, ...collideParticles].forEach(b => {
+      b.x = b.body.position.x - offset;
+      b.y = b.body.position.y;
+      Body.setPosition(b.body, { x: b.body.position.x - offset, y: b.body.position.y });
+    });
   }
 }
 
@@ -384,6 +379,25 @@ class Wall extends BaseBody {
 
 }
 
+class DividerWall extends Wall {
+  constructor(config) {
+    super(config);
+  }
+  show(){
+    super.show();
+
+    this.update();
+  }
+  update(){
+    if(targetWalls[0].checked && this.y > -height){
+      this.y -= 2;
+      Body.setPosition(this.body, { y: this.y, x: this.x  });
+
+    }
+    
+  }
+ 
+}
 
 class TargetWall extends Wall {
   constructor(config) {
