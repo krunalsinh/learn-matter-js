@@ -14,6 +14,9 @@ let gameStartPopup = document.querySelector("#gameStartPopup");
 let gameRestartButton = document.querySelector("#restartGameButton");
 let gameEndPopup = document.querySelector("#gameEndPopup");
 
+let gameWonRestartGameButton = document.querySelector("#gameWonRestartGameButton");
+let gameWonPopup = document.querySelector("#gameWonPopup");
+
 const labels = {
   wall: "wall",
   finalWall: "finalWall",
@@ -57,10 +60,13 @@ function preload() {
 }
 
 function mouseClicked() {
+  if (isMobile()) return;
+
   boxPopAction();
 }
 
 function touchEnded() {
+  if (!isMobile()) return;
   boxPopAction();
 }
 
@@ -80,12 +86,14 @@ function boxPopAction() {
     collisionFilter: { category: categories.boom }
   };
 
-  const boom = new BoomParticle({ x: px, y: py, r: 5, bodyOption: booOption });
+  const boom = new BoomParticle({ x: px, y: py, r: 6, bodyOption: booOption });
   Body.setVelocity(boom.body, { x: -velocityX, y: 10 });
   boomParticles.push(boom);
 }
 
 function initSetup() {
+  reached = false;
+
   createCanvas(innerWidth, innerHeight);
   pattern = createPattern();
   
@@ -196,7 +204,7 @@ function handleBoomCollision(event) {
 
       for (let i = 0; i < 10; i++) {
         const angle = random(TWO_PI);
-        const speed = random(3, 6);
+        const speed = random(2, 4);
         const velocity = { x: cos(angle) * speed, y: sin(angle) * speed };
 
         const bodyOption = {
@@ -227,6 +235,7 @@ function handleFinalWallCollision(event) {
         if (targetWalls.every(w => w.checked) && !reached) {
           startConfetti();
           reached = true;
+          gameWonPopup.classList.add("show");
         }
       }
     }
@@ -278,6 +287,10 @@ function updateCamera() {
   }
 }
 
+function isMobile() {
+  return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+}
+
 //custom events
 ["click", "touchend"].forEach(event => {
   gameStartButton.addEventListener(event, (e) => {
@@ -289,6 +302,14 @@ function updateCamera() {
 ["click", "touchend"].forEach(event => {
   gameRestartButton.addEventListener(event, (e) => {
     gameEndPopup.classList.remove("show");
+    initSetup();
+    startGame();  
+  });
+});
+
+["click", "touchend"].forEach(event => {
+  gameWonRestartGameButton.addEventListener(event, (e) => {
+    gameWonPopup.classList.remove("show");
     initSetup();
     startGame();  
   });
