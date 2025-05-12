@@ -5,7 +5,7 @@ const {
 } = Matter;
 
 let engine, world, grounds = [], fixedWalls = [], targetWalls = [], dividerWall, mConstraint, tileSize = 32;
-let player1, playerImg, flagRedImg, flagGreenImg, wallImage, pattern, flagAnimated;
+let player1, playerImg, flagRedImg, flagGreenImg, wallImage, animatedFlagImg, pattern;
 let boomParticles = [], collideParticles = [];
 let reached = false;
 let gameStartButton = document.querySelector("#startGameButton");
@@ -41,13 +41,17 @@ function setup() {
 }
 
 function draw() {
+
+
   drawBackgroundPattern();
-  
+
   [...grounds, ...targetWalls, ...fixedWalls, dividerWall, player1].forEach(w => w.show());
 
   boomParticles.forEach(p => p.showBooParticle());
   collideParticles.forEach(p => p.update());
   updateCamera();
+
+  animateFlag();
 
 }
 
@@ -55,8 +59,8 @@ function preload() {
   playerImg = loadImage('../../../common/images/other/box1.png');
   flagRedImg = loadImage('../../../common/images/other/flag-red.png');
   flagGreenImg = loadImage('../../../common/images/other/flag-green.png');
-  flagAnimated = loadImage('../../../common/images/other/flag-animated.gif');
   wallImage = loadImage('../../../common/images/other/wall.png');
+  animatedFlagImg = loadImage('../../../common/images/other/animated-flag-red.png');
 }
 
 function mouseClicked() {
@@ -71,6 +75,35 @@ function touchEnded() {
 }
 
 //custom functions
+const maxFrameX = 9;
+const maxFrameY = 1;
+let frameX = 0;
+let frameY = 0;
+let timeCounter = 0;
+function animateFlag() {
+  if (timeCounter > 100) {
+
+    frameX += 1;
+    if (frameX >= maxFrameX) {
+      frameX = 0;
+    }
+
+    
+    timeCounter = 0;
+  } else {
+    timeCounter += deltaTime;
+  }
+  imageMode(CORNER);
+  image(animatedFlagImg,
+    0,
+    0,
+    (animatedFlagImg.width / maxFrameX) / 4,
+    (animatedFlagImg.height / maxFrameY) / 4,
+    frameX * (animatedFlagImg.width / maxFrameX),
+    frameY * (animatedFlagImg.height / maxFrameY),
+    animatedFlagImg.width / maxFrameX,
+    animatedFlagImg.height / maxFrameY);
+}
 function boxPopAction() {
   const { x: px, y: py } = player1.body.position;
   const distX = px - mouseX;
@@ -96,15 +129,15 @@ function initSetup() {
 
   createCanvas(innerWidth, innerHeight);
   pattern = createPattern();
-  
+
   engine = Engine.create();
   world = engine.world;
-  
+
   initGroundsAndWalls();
   initPlayer();
   initMouse();
   initCollisions();
-  
+
 }
 
 function startGame() {
@@ -164,7 +197,7 @@ function initGroundsAndWalls() {
     { x: 1500, y: 400, w: tileSize * 3, h: tileSize * 3, opt: wallOptions },
     { x: 1800, y: 500, w: tileSize * 3, h: tileSize * 3, opt: wallOptions },
     { x: 2000, y: 700, w: tileSize * 3, h: tileSize * 3, opt: wallOptions },
-    
+
   ];
 
   grounds = bodyData.map(d => new Wall({ x: d.x, y: d.y, w: d.w, h: d.h, bodyOption: d.opt }));
@@ -179,9 +212,9 @@ function initGroundsAndWalls() {
 
   dividerWall = new DividerWall({ x: 2200, y: height / 2 - 50, w: tileSize * 1, h: height + 200, bodyOption: wallOptions });
 
- const fixedWallsData = [
+  const fixedWallsData = [
     { x: 0 - tileSize / 2 + 5, y: height / 2 - 50, w: tileSize, h: height + 150, opt: wallOptions },
-    { x: width / 2 - 50, y: 0 - tileSize / 2 -50, w: width + 150, h: tileSize , opt: wallOptions },
+    { x: width / 2 - 50, y: 0 - tileSize / 2 - 50, w: width + 150, h: tileSize, opt: wallOptions },
   ]
   fixedWalls = fixedWallsData.map(d => new Wall({ x: d.x, y: d.y, w: d.w, h: d.h, bodyOption: d.opt }));
 }
@@ -235,6 +268,7 @@ function handleFinalWallCollision(event) {
         if (targetWalls.every(w => w.checked) && !reached) {
           startConfetti();
           reached = true;
+          stopGame();
           gameWonPopup.classList.add("show");
         }
       }
@@ -303,7 +337,7 @@ function isMobile() {
   gameRestartButton.addEventListener(event, (e) => {
     gameEndPopup.classList.remove("show");
     initSetup();
-    startGame();  
+    startGame();
   });
 });
 
@@ -311,7 +345,7 @@ function isMobile() {
   gameWonRestartGameButton.addEventListener(event, (e) => {
     gameWonPopup.classList.remove("show");
     initSetup();
-    startGame();  
+    startGame();
   });
 });
 
@@ -361,7 +395,7 @@ class BaseBody {
 
   checkOutOfWorld() {
     const { y } = this.body.position;
-    if (  y > height + 150 + this.h) {
+    if (y > height + 150 + this.h) {
       return true;
     }
     return false;
@@ -416,10 +450,10 @@ class Player extends BaseBody {
   }
 
   update() {
-    if(this.checkOutOfWorld()){
+    if (this.checkOutOfWorld()) {
       stopGame();
       gameEndPopup.classList.add("show");
-    } 
+    }
   }
 }
 
@@ -465,20 +499,20 @@ class DividerWall extends Wall {
   constructor(config) {
     super(config);
   }
-  show(){
+  show() {
     super.show();
 
     this.update();
   }
-  update(){
-    if(targetWalls[0].checked && this.y > -height){
+  update() {
+    if (targetWalls[0].checked && this.y > -height) {
       this.y -= 2;
-      Body.setPosition(this.body, { y: this.y, x: this.x  });
+      Body.setPosition(this.body, { y: this.y, x: this.x });
 
     }
-    
+
   }
- 
+
 }
 
 class TargetWall extends Wall {
