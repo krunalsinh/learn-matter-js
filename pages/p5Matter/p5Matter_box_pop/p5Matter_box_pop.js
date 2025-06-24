@@ -4,7 +4,7 @@ const {
   MouseConstraint, Mouse, Events
 } = Matter;
 
-let engine, world, grounds = [], fixedWalls = [], targetWalls = [], dividerWall, mConstraint, tileSize = 32;
+let engine, world, grounds = [], fixedWalls = [], targetWalls = [], dividerWall, mConstraint, tileSize = 32, cameraOffsetX = 0;
 let player1, playerImg, flagRedImg, flagGreenImg, wallImage, animatedFlagImg, pattern;
 let boomParticles = [], collideParticles = [];
 let reached = false;
@@ -38,20 +38,28 @@ const categories = {
 //p5 functions
 function setup() {
   initSetup();
+   noSmooth();
 }
 
 function draw() {
+  background(0);
 
-
+  // console.log(deltaTime);
+  
+  // Apply camera offset
+  push();
+  translate(-cameraOffsetX, 0);
+  
   drawBackgroundPattern();
 
   [...grounds, ...targetWalls, ...fixedWalls, dividerWall, player1].forEach(w => w.show());
 
   boomParticles.forEach(p => p.showBooParticle());
   collideParticles.forEach(p => p.update());
+  pop();
   updateCamera();
 
-  animateFlag();
+  // animateFlag();
 
 }
 
@@ -203,12 +211,12 @@ function initGroundsAndWalls() {
   grounds = bodyData.map(d => new Wall({ x: d.x, y: d.y, w: d.w, h: d.h, bodyOption: d.opt }));
 
 
-  const targetData = [
+  const targetWallsData = [
     { x: 1200, y: 200, w: tileSize * 9, h: tileSize * 1, opt: finalOptions },
     { x: 2500, y: 200, w: tileSize * 9, h: tileSize * 1, opt: finalOptions },
   ];
 
-  targetWalls = targetData.map(d => new TargetWall({ x: d.x, y: d.y, w: d.w, h: d.h, bodyOption: d.opt }));
+  targetWalls = targetWallsData.map(d => new TargetWall({ x: d.x, y: d.y, w: d.w, h: d.h, bodyOption: d.opt }));
 
   dividerWall = new DividerWall({ x: 2200, y: height / 2 - 50, w: tileSize * 1, h: height + 200, bodyOption: wallOptions });
 
@@ -311,12 +319,13 @@ function updateCamera() {
   const threshold = width / 2;
   const playerX = player1.body.position.x;
   if (playerX > threshold) {
-    const offset = playerX - threshold;
+    const desiredOffset  = playerX - threshold;
+    cameraOffsetX = lerp(cameraOffsetX, desiredOffset, 0.1);
     Body.setPosition(player1.body, { x: threshold, y: player1.body.position.y });
     [...grounds, ...targetWalls, dividerWall, ...boomParticles, ...collideParticles].forEach(b => {
-      b.x = b.body.position.x - offset;
+      b.x = b.body.position.x - desiredOffset ;
       b.y = b.body.position.y;
-      Body.setPosition(b.body, { x: b.body.position.x - offset, y: b.body.position.y });
+      Body.setPosition(b.body, { x: b.body.position.x - desiredOffset , y: b.body.position.y });
     });
   }
 }
